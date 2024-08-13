@@ -105,7 +105,7 @@ export class GraphDescription {
       div.append('div').text(eg).classed('eg', true);
 
       div.on('mouseover', mouseover);
-      div.on('mouseout', () => this.unhighlightAll()));
+      div.on('mouseout', () => this.unhighlightAll());
     }
 
     makeLine('V', 'Vertex (or node) attributes', 'e.g., node identity, number of neighbors', () => this.highlightNodes())

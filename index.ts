@@ -40,6 +40,7 @@ import {Playground} from './visualizations/playground/index';
 import { GraphDescription } from './visualizations/graph-description';
 import { Table } from './visualizations/table';
 import { GraphDescriptionEmbeddings } from './visualizations/graph-description-embeddings';
+import { ErdosRenyiGraph } from './visualizations/er';
 
 
 window.onload = function() {
@@ -52,6 +53,7 @@ window.onload = function() {
   nodeStep();
   shuffleSm();
   new LayerwiseTrace();
+  new ErdosRenyiGraph("erdosrenyi", 15, 0.2);
   new TextAsGraph();
   new XsAsGraphs();
   new Playground();
