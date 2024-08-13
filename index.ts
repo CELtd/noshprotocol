@@ -41,7 +41,7 @@ import { GraphDescription } from './visualizations/graph-description';
 import { Table } from './visualizations/table';
 import { GraphDescriptionEmbeddings } from './visualizations/graph-description-embeddings';
 // import { ErdosRenyiGraph } from './visualizations/er';
-import { EigenvectorCentrality } from './visualizations/ec';
+import { ECViz } from './visualizations/ec';
 
 window.onload = function() {
   pcaLayers();
@@ -54,7 +54,7 @@ window.onload = function() {
   shuffleSm();
   new LayerwiseTrace();
   // new ErdosRenyiGraph("erdosrenyi", 15, 0.2);
-  new EigenvectorCentrality("ec1", "ec2", 600, 600, 10, 0.1, 5, 0.05);
+  new ECViz("ec1", 600, 400, 15, 0.2);
   new TextAsGraph();
   new XsAsGraphs();
   new Playground();

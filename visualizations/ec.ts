@@ -3,6 +3,8 @@ import * as d3 from "d3";
 interface Node extends d3.SimulationNodeDatum {
     id: number;
     weight: number;
+    isCentral: boolean;
+    centrality: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
@@ -10,8 +12,6 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 }
 
 const color = d3.scaleOrdinal(d3.schemeTableau10);
-const plotSize = 200; // Adjust size as needed
-const updateLimit = 500; // You can configure this value
 
 class EigenvectorCentralityCalculator {
     private static dotProduct(a: number[], b: number[]): number {
@@ -69,7 +69,6 @@ class Graph {
     
     private width: number;
     private height: number;
-    private simulation: d3.Simulation<Node, Link>;
     private nodeId: number = 0;
     private maxWeight: number = 0;
 
@@ -84,39 +83,80 @@ class Graph {
             .attr("viewBox", `0 0 ${this.width} ${this.height}`)
             .style("display", "block")
             .style("overflow", "hidden");
-
-        this.simulation = d3.forceSimulation<Node, Link>()
-            .force("link", d3.forceLink<Node, Link>().id(d => d.id.toString()).distance(20))
-            .force("charge", d3.forceManyBody().strength(-1))
-            .force("center", d3.forceCenter(this.width / 2, this.height / 2)); // Set a fixed center point
     }
 
-    public initGraph(initialNodes: number, p: number): void {
+    public initGraph(initialNodes: number): void {
+        if (initialNodes < 1) return; // Ensure there's at least one node for the ring
+    
+        // Clear existing nodes and links if any
+        this.nodes = [];
+        this.links = [];
+        this.nodeId = 0;
+        this.maxWeight = 0;
+    
+        // Central node
+        this.addNode(true);  // Central node
+        this.nodes[0].x = this.width / 2;
+        this.nodes[0].y = this.height / 2;
+        this.nodes[0].fx = this.width / 2;  // Fix position
+        this.nodes[0].fy = this.height / 2;
+    
+        // Calculate radius for the circle of nodes
+        const radius = Math.min(this.width, this.height) / 3;  // Adjust radius as needed
+    
+        // Add ring nodes
         for (let i = 0; i < initialNodes; i++) {
-            this.addNode();
+            this.addNode(false); // Regular node
+            const angle = (i / initialNodes) * 2 * Math.PI; // Angle in radians
+            this.nodes[i + 1].x = this.width / 2 + radius * Math.cos(angle);
+            this.nodes[i + 1].y = this.height / 2 + radius * Math.sin(angle);
+        }
+    
+        // Connect ring nodes
+        for (let i = 1; i <= initialNodes; i++) {
+            let nextIndex = (i % initialNodes) + 1;  // Wrap around to the first node
+            this.addLink(this.nodes[i], this.nodes[nextIndex]);
+        }
+    
+        this.updateGraph();
+    }
+    
+    
+    public addNode(isCentral: boolean = false): void {
+        const newNode: Node = {
+            id: this.nodeId++,
+            weight: isCentral ? 1 : Math.random(), // Optionally give the central node different characteristics
+            isCentral: isCentral // Flag to identify the central node
+        };
+        this.nodes.push(newNode);
+        if (!isCentral) {
+            // Optionally initialize connections or specific properties for non-central nodes
         }
         this.updateGraph();
     }
 
-    public addNode(): void {
-        const newNode: Node = {
-            id: this.nodeId++,
-            weight: Math.random()
-        };
-        this.nodes.push(newNode);
-        this.nodes.forEach(node => {
-            if (node !== newNode && Math.random() < this.p) {
-                this.links.push({ source: newNode, target: node, weight: Math.random() });
+    public connectNextUnlinkedNode(): void {
+        const centralNode = this.nodes[0];
+        const connectedNodes = new Set(this.links
+            .filter(link => link.source === centralNode || link.target === centralNode)
+            .map(link => link.source === centralNode ? link.target.id : link.source.id));
+    
+        for (let i = 1; i < this.nodes.length; i++) {
+            if (!connectedNodes.has(this.nodes[i].id)) {
+                this.addLink(centralNode, this.nodes[i]);
+                this.computeEigenvectorCentrality(); // Recompute centrality every time a link is added
+                this.updateGraph();
+                break;
             }
-        });
-        this.updateGraph();
-    }
+        }
+    }    
 
     public addLink(source: Node, target: Node): void {
         const newLink: Link = {
             source,
             target,
-            weight: Math.random()
+            weight: 1
+            // weight: Math.random()
         };
         this.links.push(newLink);
 
@@ -128,94 +168,71 @@ class Graph {
     }
 
     public updateGraph(): void {
-        const links = this.svg.selectAll(".link")
-            .data(this.links, d => `${d.source.id}-${d.target.id}`);
-        
-        links.enter()
-            .append("line")
-            .attr("class", "link")
-            .merge(links)
-            .style("stroke", d => d3.interpolateGreens(d.weight / this.maxWeight))
-            .style("stroke-width", 1);
-        
-        const nodes = this.svg.selectAll(".node")
-            .data(this.nodes, d => d.id);
-        
-        const nodeEnter = nodes.enter()
-            .append("g")
-            .attr("class", "node")
-            .call(this.drag());
-
-        nodeEnter.append("circle")
-            .attr("r", 10)  // Adjust the radius size as needed
-            .style("fill", d => this.getNodeColor(d))
-            .style("stroke", "black")
-            .style("stroke-width", 1);
-        
-        nodeEnter.append("text")
-            .attr("dy", 4)
-            .attr("text-anchor", "middle")
-            .style("font-size", "10px")
-            .text(d => d.id.toString());
-
-        nodes.merge(nodeEnter)
-            .select("circle")
-            .attr("r", 10)  // Adjust the radius size as needed
-            .style("fill", d => this.getNodeColor(d))
-            .style("stroke", "black");
-        
-        nodes.merge(nodeEnter)
-            .select("text")
-            .attr("dy", 4)
-            .style("font-size", "10px");
-        
-        this.simulation.nodes(this.nodes);
-        this.simulation.force<d3.ForceLink<Node, Link>>("link").links(this.links);
-        this.simulation.alpha(1).restart();
-        
-        this.simulation.on("tick", () => {
-            links
-                .attr("x1", d => d.source.x)
-                .attr("x2", d => d.target.x)
-                .attr("y1", d => d.source.y)
-                .attr("y2", d => d.target.y);
-        
-            nodes.select("circle")
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y);
-            
-            nodes.select("text")
-                .attr("x", d => d.x)
-                .attr("y", d => d.y);
-        });
+        // Assuming centrality is already computed and stored in each node
     
-        // Update the center force to keep the graph centered
-        this.simulation.force("center", d3.forceCenter(this.width / 2, this.height / 2));
-        this.simulation.alpha(1).restart();
+        // Define a scale for node sizes
+        const centralityValues = this.nodes.map(node => node.centrality || 0);
+        const sizeScale = d3.scaleLinear()
+                            .domain([Math.min(...centralityValues), Math.max(...centralityValues)])
+                            .range([5, 20]); // Minimum size 5, maximum size 20
+    
+        // Update nodes
+        const nodes = this.svg.selectAll(".node")
+            .data(this.nodes, d => d.id)
+            .join(
+                enter => {
+                    const g = enter.append("g").classed("node", true);
+                    g.append("circle")
+                        .attr("r", d => sizeScale(d.centrality || 0))
+                        .style("fill", d => this.getNodeColor(d))
+                        .style("stroke", "black")
+                        .style("stroke-width", 2);
+                    g.append("text")
+                        .attr("dy", "0.35em")
+                        .attr("text-anchor", "middle")
+                        .text(d => d.id.toString());
+                    return g;
+                },
+                update => update,
+                exit => exit.remove()
+            );
+    
+        nodes.select("circle")
+            .attr("r", d => sizeScale(d.centrality || 0));  // Update the radius based on centrality
+    
+        nodes.attr("transform", d => `translate(${d.x}, ${d.y})`);
+    
+        // Update links
+        const links = this.svg.selectAll(".link")
+            .data(this.links, d => `${d.source.id}-${d.target.id}`)
+            .join("line")
+            .classed("link", true)
+            .attr("x1", d => d.source.x)
+            .attr("x2", d => d.target.x)
+            .attr("y1", d => d.source.y)
+            .attr("y2", d => d.target.y)
+            .attr("stroke", d => d3.interpolateGreens(d.weight / this.maxWeight))
+            .attr("stroke-width", 2);
+    
+        links.exit().remove();
     }
-
-    private drag() {
-        return d3.drag()
-            .on("start", (event, d) => {
-                if (!event.active) this.simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            })
-            .on("drag", (event, d) => {
-                d.fx = event.x;
-                d.fy = event.y;
-            })
-            .on("end", (event, d) => {
-                if (!event.active) this.simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            });
-    }
+     
 
     private getNodeColor(d: Node): string {
-        return "lightgray"; // Default color
+        // Calculate the total weight of all nodes
+        const totalWeight = this.nodes.reduce((acc, node) => acc + node.weight, 0);
+    
+        // Define a color scale; you might adjust the color range as needed
+        const scale = d3.scaleSequential(d3.interpolateBlues)
+            .domain([0, 1]);  // Normalized range from 0 to 1
+    
+        // Normalize this node's weight
+        const normalizedWeight = d.weight / totalWeight;
+    
+        // Return the color for this normalized weight
+        return scale(normalizedWeight);
     }
-
+    
     public getAdjacencyMatrix(): number[][] {
         const size = this.nodes.length;
         const matrix: number[][] = Array(size).fill(0).map(() => Array(size).fill(0));
@@ -229,50 +246,40 @@ class Graph {
         
         return matrix;
     }
+
+    private computeEigenvectorCentrality(): void {
+        const adjacencyMatrix = this.getAdjacencyMatrix();
+        const b = Array(adjacencyMatrix.length).fill(0); // no doping
+        const { eigenvector } = EigenvectorCentralityCalculator.powerIteration(adjacencyMatrix, b, 1000);
+    
+        this.nodes.forEach((node, i) => {
+            node.centrality = eigenvector[i];
+        });
+    }    
 }
 
-export class EigenvectorCentrality {
+export class ECViz {
     private graph1: Graph;
     private graph2: Graph;
     private updateCounter: number = 0;
-    private readonly updateLimit: number = 10;
+    private updateLimit;
 
-    constructor(containerId1: string, containerId2: string, width: number, height: number, 
-                private initialNodes1: number = 50, private p1: number = 0.1,
-                private initialNodes2: number = 50, private p2: number = 0.05) {
-        this.graph1 = new Graph(containerId1, width, height);
-        this.graph2 = new Graph(containerId2, width, height);
-
-        this.graph1.initGraph(this.initialNodes1, this.p1);
-        this.graph2.initGraph(this.initialNodes2, this.p2);
+    constructor(containerId1: string, width: number, height: number, 
+                private initialNodes1: number = 50, private p1: number = 0.1) {
+        
+                    this.graph1 = new Graph(containerId1, width, height);
+        this.graph1.initGraph(this.initialNodes1);
 
         this.addColorBar();
-        setInterval(() => this.step(), 250);
+        this.updateLimit = initialNodes1 + 1;
+        setInterval(() => this.step(), 1000);
     }
 
     private step(): void {
-        // Define the probability of adding a new link
-        // const linkAdditionProbability = 0.1; // Adjust this probability as needed
-    
-        // // Add a new link with a certain probability
-        // if (Math.random() < linkAdditionProbability) {
-        //     this.graph1.addNode();
-        // }
-        // if (Math.random() < linkAdditionProbability) {
-        //     this.graph2.addNode();
-        // }
     
         // Highlight and update weights for existing links
+        this.graph1.connectNextUnlinkedNode();
         this.graph1.updateGraph();
-        this.graph2.updateGraph();
-    
-        // Compute eigenvector centrality for both graphs
-        const centralityMap1 = this.computeEigenvectorCentrality(this.graph1);
-        const centralityMap2 = this.computeEigenvectorCentrality(this.graph2);
-    
-        // Update node sizes based on eigenvector centrality
-        this.updateNodeSizes(centralityMap1, this.graph1);
-        this.updateNodeSizes(centralityMap2, this.graph2);
     
         // Increment the update counter and check if it reached the limit
         this.updateCounter++;
@@ -280,40 +287,19 @@ export class EigenvectorCentrality {
             this.resetSimulation();
         }
     }
-    
-    private computeEigenvectorCentrality(graph: Graph): Map<number, number> {
-        const adjacencyMatrix = graph.getAdjacencyMatrix();
-        const b = Array(adjacencyMatrix.length).fill(0); // no doping
-        const { eigenvector } = EigenvectorCentralityCalculator.powerIteration(adjacencyMatrix, b, 1000);
-
-        const eigenvectorCentrality: { [key: number]: number } = {};
-        graph.nodes.forEach((node, i) => {
-            eigenvectorCentrality[node.id] = eigenvector[i];
-        });
-
-        return new Map<number, number>(Object.entries(eigenvectorCentrality).map(([id, centrality]) => [parseInt(id, 10), centrality]));
-    }
-
-    private updateNodeSizes(centralityMap: Map<number, number>, graph: Graph): void {
-        const maxCentrality = Math.max(...centralityMap.values());
-        const minCentrality = Math.min(...centralityMap.values());
-        const sizeScale = d3.scaleLinear()
-            .domain([minCentrality, maxCentrality])
-            .range([5, 20]); // Adjust the range as needed for node sizes
-    
-        // Update nodes
-        graph.svg.selectAll(".node")
-            .select("circle")
-            .transition()
-            .duration(500)
-            .attr("r", d => sizeScale(centralityMap.get(d.id) || 0)); // Update node radius
-    }
 
     private addColorBar(): void {
         // Implement the color bar logic
     }
 
     private resetSimulation(): void {
-        // Implement reset logic
+        // Clear existing SVG elements
+        this.graph1.svg.selectAll("*").remove();  // This removes every element within the SVG, ensuring no old links or nodes persist.
+        
+        // Reinitialize the graph
+        this.graph1.initGraph(this.initialNodes1);
+
+        this.updateCounter = 0;
     }
+    
 }
