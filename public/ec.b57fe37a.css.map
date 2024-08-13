@@ -1,0 +1,1 @@
+{"version":3,"sources":["visualizations/ec.css"],"names":[],"mappings":"AAAA;AACA;AACA;AACA;AACA","file":"ec.b57fe37a.css","sourceRoot":"..","sourcesContent":["#container1, #container2 {\n    border: 1px solid #ccc; /* Optional border for visualization */\n    margin: 1px;\n}\n"]}

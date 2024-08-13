@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="/graph-description.c0d85959.css">
 <link rel="stylesheet" href="/graph-description-embeddings.95e72025.css">
 <link rel="stylesheet" href="/er.8c6d3d21.css">
+<link rel="stylesheet" href="/ec.b57fe37a.css">
 
 
 <d-front-matter>
@@ -84,10 +85,17 @@ Hover over a node in the diagram below to see how it accumulates information fro
 
 <p><em>Nosh is a decentralized protocol that enables producers of goods and services to transact with buyers. The protocol is built on a transaction graph that captures the protocol state and enables rewards to be distributed to participants, creating a user-owned network. The protocol has an open and extensible architecture to be compatible with any buyer and producer market. The cryptoeconomic design facilitates robustness to Sybil attacks, and economic fairness, aligns incentives between the network and participants, and unlocks new primitives for verifiability in physical infrastructure networks.</em></p>
 
-<figure><div id="erdosrenyi"></div>
+<!-- <figure><div id='erdosrenyi'></div>
   <figcaption>
   Simulation of the Nosh transaction graph. Each node represents a buyer or seller as indicated by the legend, and each edge represents a transaction between users.  New transactions are represented by highlighted edges, and new buyers and sellers can come onto the network.  The adjacency matrix of the graph is shown on the top right, and the total graph value is shown on the bottom left.
-  </figcaption></figure>
+  </figcaption></figure> -->
+<figure>
+  <div id="ec1" style="float: left; width: 50%;"></div>
+  <div id="ec2" style="float: left; width: 50%;"></div>
+  <figcaption>
+    Illustration of Eigenvector Centrality
+  </figcaption>
+</figure>
   
 
 <p>Graphs are all around us; real world objects are often defined in terms of their connections to other things. A set of objects, and the connections between them, are naturally expressed as a <em>graph</em>. Researchers have developed neural networks that operate on graph data (called graph neural networks, or GNNs) for over a decade<d-cite key="Scarselli2009-ku"></d-cite>. Recent developments have increased their capabilities and expressive power. We are starting to see practical applications in areas such as antibacterial discovery <d-cite key="Stokes2020-az"></d-cite>, physics simulations  <d-cite key="Sanchez-Gonzalez2020-yo"></d-cite>, fake news detection <d-cite key="Monti2019-tf"></d-cite>, traffic prediction <d-cite key="undated-sy"></d-cite> and recommendation systems <d-cite key="Eksombatchai2017-il"></d-cite>.</p>

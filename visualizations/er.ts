@@ -78,7 +78,7 @@ export class ErdosRenyiGraph {
         this.initGraph();
         this.addLegend();
         this.addColorBar();
-        setInterval(() => this.highlightRandomEdge(), 250);
+        setInterval(() => this.highlightRandomEdge(), 1000);
     }
 
     private initGraph(): void {
