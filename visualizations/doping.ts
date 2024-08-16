@@ -131,7 +131,7 @@ class Graph {
     }
 
     public updateGraph(): void {
-        console.log("updateGraph, simIndex: ", this.simIndex);
+        // console.log("updateGraph, simIndex: ", this.simIndex);
     
         // Combine centrality and centrality_doped values to find a common scale
         const allCentralityValues = [

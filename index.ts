@@ -43,6 +43,7 @@ import { GraphDescriptionEmbeddings } from './visualizations/graph-description-e
 // import { ErdosRenyiGraph } from './visualizations/er';
 import { ECViz } from './visualizations/ec';
 import { DopingViz } from './visualizations/doping';
+import { IslandViz } from './visualizations/island';
 
 window.onload = function() {
   pcaLayers();
@@ -57,6 +58,7 @@ window.onload = function() {
   // new ErdosRenyiGraph("erdosrenyi", 15, 0.2);
   new ECViz("ec1", 600, 400, 15, 0.2);
   new DopingViz("doping", 600, 400, 15);
+  new IslandViz("island", 600, 400, 15);
   new TextAsGraph();
   new XsAsGraphs();
   new Playground();

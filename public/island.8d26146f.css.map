@@ -1,0 +1,1 @@
+{"version":3,"sources":["visualizations/island.css"],"names":[],"mappings":"AAAA;AACA;AACA;AACA;AACA","file":"island.8d26146f.css","sourceRoot":"..","sourcesContent":["#island {\n    border: 1px solid #ccc; /* Optional border for visualization */\n    margin: 1px;\n}\n"]}
