@@ -97,7 +97,7 @@ Hover over a node in the diagram below to see how it accumulates information fro
   <div id="ec1" style="float: left; width: 100%;"></div>
   <!-- <div id="ec2" style="float: left; width: 50%;"></div> -->
   <figcaption>
-    Illustration of Eigenvector Centrality (EC).  The size of the node indicates the EC of the node.  A larger node has a higher EC and a smaller node has lower EC.
+    Illustration of Eigenvector Centrality (EC).  The size of the node indicates the EC of the node.  A larger node has a higher EC and a smaller node has lower EC. Initially, the simulation begins with a central node that is not connected to any of the surrounding nodes, so we observe that the nodes in the ring (numbers >= 1) have slightly higher EC than the central node.  Next, we advance the simulation by sequentially connecting the central node to each ring node.  As we do so, we observe that the relative value of the central node's EC is larger than the ring nodes.
   </figcaption>
 </figure>
   
@@ -105,7 +105,7 @@ Hover over a node in the diagram below to see how it accumulates information fro
   <div id="doping" style="float: left; width: 100%;"></div>
   <!-- <div id="ec2" style="float: left; width: 50%;"></div> -->
   <figcaption>
-    Illustration of Doping.
+    Illustration of injection of trust into a node. In this example, we show how a node can be injected with additional information, such as KYC, to increase its trust, and the effect this has on neighbor nodes in the graph. The process is broken up into three steps: (1) there is no KYC information, (2) the central node is injected with KYC information, which causes its Eigenvector Centrality to increase relative to other nodes in the network, (3) the node's neighbors are updated with the KYC'ed information.  We observe in this simulation that initially, the nodes have a particular EC value indicated by their node size.  Next, we inject trust into the central node, as an example (they submit KYC), and this node is colored green.  It gets larger because trust has been added.  After this, we observe the propagation of this EC to other nodes, and observe that the nodes directly connected to the KYC'ed node now have larger EC than the ones that are not directly connected.
   </figcaption>
 </figure>
 

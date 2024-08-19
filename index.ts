@@ -57,7 +57,7 @@ window.onload = function() {
   new LayerwiseTrace();
   // new ErdosRenyiGraph("erdosrenyi", 15, 0.2);
   new ECViz("ec1", 600, 400, 15, 0.2);
-  new DopingViz("doping", 600, 400, 15);
+  new DopingViz("doping", 600, 400, 6);
   new IslandViz("island", 600, 400, 15);
   new TextAsGraph();
   new XsAsGraphs();

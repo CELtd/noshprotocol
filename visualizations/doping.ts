@@ -70,7 +70,7 @@ class Graph {
         // Connect ring nodes
         for (let i = 1; i <= initialNodes; i++) {
             let nextIndex = (i % initialNodes) + 1;  // Wrap around to the first node
-            this.addLink(this.nodes[i], this.nodes[nextIndex]);
+            this.addLink(this.nodes[i], this.nodes[nextIndex], i/initialNodes);
         }
         // connect 3 to the central node for demonstration
         this.connectNextUnlinkedNode();
@@ -106,7 +106,7 @@ class Graph {
     
         for (let i = 1; i < this.nodes.length; i++) {
             if (!connectedNodes.has(this.nodes[i].id)) {
-                this.addLink(centralNode, this.nodes[i]);
+                this.addLink(centralNode, this.nodes[i], i/3);
                 this.computeEigenvectorCentrality(); // Recompute centrality every time a link is added
                 this.updateGraph();
                 break;
@@ -114,12 +114,13 @@ class Graph {
         }
     }    
 
-    public addLink(source: Node, target: Node): void {
+    public addLink(source: Node, target: Node, weight: Number): void {
         const newLink: Link = {
             source,
             target,
-            weight: 1
+            // weight: 1
             // weight: Math.random()
+            weight: weight
         };
         this.links.push(newLink);
 
@@ -232,8 +233,8 @@ class Graph {
 
     private computeEigenvectorCentrality_doping(): void {
         const adjacencyMatrix = this.getAdjacencyMatrix();
-        const b = Array(adjacencyMatrix.length).fill(0); // no doping
-        b[0] = 1; // doping the central node
+        const b = Array(adjacencyMatrix.length).fill(0);
+        b[0] = 1; b[1] = 1; b[2] = 1; b[3] = 1;
         const { eigenvector } = EigenvectorCentralityCalculator.powerIteration(adjacencyMatrix, b, 1000);
     
         this.nodes.forEach((node, i) => {
