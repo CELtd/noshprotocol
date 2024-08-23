@@ -40,7 +40,9 @@ import {Playground} from './visualizations/playground/index';
 import { GraphDescription } from './visualizations/graph-description';
 import { Table } from './visualizations/table';
 import { GraphDescriptionEmbeddings } from './visualizations/graph-description-embeddings';
-// import { ErdosRenyiGraph } from './visualizations/er';
+
+// Nosh Visualizations
+import { ErdosRenyiGraph } from './visualizations/er';
 import { ECViz } from './visualizations/ec';
 import { DopingViz } from './visualizations/doping';
 import { IslandViz } from './visualizations/island';
@@ -55,10 +57,6 @@ window.onload = function() {
   nodeStep();
   shuffleSm();
   new LayerwiseTrace();
-  // new ErdosRenyiGraph("erdosrenyi", 15, 0.2);
-  new ECViz("ec1", 600, 400, 15, 0.2);
-  new DopingViz("doping", 600, 400, 6);
-  new IslandViz("island", 600, 400, 15);
   new TextAsGraph();
   new XsAsGraphs();
   new Playground();
@@ -66,4 +64,11 @@ window.onload = function() {
   new GraphDescriptionEmbeddings();
   imageAsGraph();
   new Table();
+
+  // instantiate the objects to be visualized
+  new ErdosRenyiGraph("erdosrenyi", 15, 0.2);
+  new ECViz("ec1", 600, 400, 15, 0.2);
+  new DopingViz("doping", 600, 400, 6);
+  new IslandViz("island", 600, 400, 15);
+  
 };

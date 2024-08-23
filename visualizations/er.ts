@@ -1,10 +1,11 @@
 import * as d3 from "d3";
-import { zoom as d3Zoom } from 'd3-zoom';
+import { EigenvectorCentralityCalculator } from "./noshlib";
 
 interface Node extends d3.SimulationNodeDatum {
     id: number;
     type: 'buyer' | 'seller';
     weight: number;
+    centrality: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
@@ -12,8 +13,8 @@ interface Link extends d3.SimulationLinkDatum<Node> {
 }
 
 const color = d3.scaleOrdinal(d3.schemeTableau10);
-const plotSize = 200; // Adjust size as needed
-const updateLimit = 500; // You can configure this value
+const plotSize = 200; 
+const updateLimit = 100;
 
 export class ErdosRenyiGraph {
     private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -21,13 +22,12 @@ export class ErdosRenyiGraph {
     private height: number;
     private nodes: Node[] = [];
     private links: Link[] = [];
-    private weightSums: number[] = [];
+    private totalGraphValue: number[] = [];
     private simulation: d3.Simulation<Node, Link>;
     private nodeId: number = 0;
     private maxWeight: number = 0;  // Initialize with zero or the starting maximum weight
     private updateCounter: number = 0;
     
-
     private graphGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
     private matrixGroup: d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -67,7 +67,7 @@ export class ErdosRenyiGraph {
             .attr('x', plotSize/2)
             .attr('y', this.height - plotSize - 35)
             .style('text-anchor', 'end')
-            .text('Graph Value')
+            .text('Sum(Weights)')
             .style('font-size', '12px');
     
         this.simulation = d3.forceSimulation<Node, Link>()
@@ -78,7 +78,7 @@ export class ErdosRenyiGraph {
         this.initGraph();
         this.addLegend();
         this.addColorBar();
-        setInterval(() => this.highlightRandomEdge(), 1000);
+        setInterval(() => this.highlightRandomEdge(), 100);
     }
 
     private initGraph(): void {
@@ -86,7 +86,53 @@ export class ErdosRenyiGraph {
             this.addNode();
         }
         this.updateGraph();
-        this.updateAdjacencyMatrix(); // Initial call to draw the matrix
+        this.updateAdjacencyMatrix();
+    }
+
+    private resetSimulation(): void {
+        // Clear everything in the SVG
+        this.svg.selectAll("*").remove();
+        
+        // Reset internal state
+        this.nodes = [];
+        this.links = [];
+        this.totalGraphValue = [];
+        this.nodeId = 0;
+        this.maxWeight = 0;
+        this.updateCounter = 0;
+
+        // reset svg
+        this.graphGroup = this.svg.append("g")
+            .attr("class", "graph")
+            .attr("transform", `translate(0, 0)`); // Position graph on the left side
+        this.matrixGroup = this.svg.append("g")
+            .attr("class", "matrix")
+            .attr("transform", `translate(${this.width - plotSize}, 15)`); // Position matrix on the right side
+        this.svg.append('text')
+            .attr('x', this.width - plotSize/2)
+            .attr('y', 10)
+            .style('text-anchor', 'end')
+            .text('Adjacency Matrix')
+            .style('font-size', '12px');
+    
+        this.svg.append("g")
+            .attr("class", "colorbar-legend")
+            .attr("transform", `translate(${this.width / 2 - 10}, 0)`); // Adjusted for left side
+    
+        this.svg.append("g")
+            .attr("class", "line-graph")
+            .attr("transform", `translate(22, ${plotSize + 180})`); // Position line graph on the bottom right
+        this.svg.append('text')
+            .attr('x', plotSize/2)
+            .attr('y', this.height - plotSize - 35)
+            .style('text-anchor', 'end')
+            .text('Sum(Weights)')
+            .style('font-size', '12px');
+        
+        // Reinitialize graph
+        this.initGraph();
+        this.addLegend();
+        this.addColorBar();
     }
 
     private addNode(): void {
@@ -142,38 +188,14 @@ export class ErdosRenyiGraph {
                 .attr("cy", d => d.y);
         });
     
-        // Re-calculate the bounding box and adjust the simulation center
-        const bbox = this.graphGroup.node().getBBox();
-        const graphCenterX = bbox.x + bbox.width / 2;
-        const graphCenterY = bbox.y + bbox.height / 2;
-    
         // Update the center force to keep the graph centered
         this.simulation.force("center", d3.forceCenter(this.width / 2, this.height / 2));
         this.simulation.alpha(1).restart();
     }
-    
-
-    private adjustViewBox(): void {
-        // Calculate the bounding box of the graph and matrix
-        const graphBbox = this.graphGroup.node().getBBox();
-        const matrixBbox = this.matrixGroup.node().getBBox();
-        
-        // Compute the combined bounding box
-        const bbox = {
-            x: Math.min(graphBbox.x, matrixBbox.x),
-            y: Math.min(graphBbox.y, matrixBbox.y),
-            width: Math.max(graphBbox.x + graphBbox.width, matrixBbox.x + matrixBbox.width) - Math.min(graphBbox.x, matrixBbox.x),
-            height: Math.max(graphBbox.y + graphBbox.height, matrixBbox.y + matrixBbox.height) - Math.min(graphBbox.y, matrixBbox.y)
-        };
-
-        // Adjust the viewBox to fit the combined graph and matrix
-        this.svg.attr("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
-    }
-
 
     private highlightRandomEdge(): void {
         // Define the probability for adding a new node
-        const addNodeProbability = 0.1; // Adjust this probability as needed
+        const addNodeProbability = 0.1;
     
         // Add a new node with some probability
         let newNode: Node | null = null;
@@ -273,8 +295,34 @@ export class ErdosRenyiGraph {
         });
     
         // Calculate and store the sum of all weights
-        const totalWeight = this.links.reduce((sum, link) => sum + link.weight, 0);
-        this.weightSums.push(totalWeight);
+        this.computeEigenvectorCentrality(); // Recompute centrality every time a link is added
+
+        // Step 1: Calculate indegree for each node
+        const alpha1 = 1;
+        const alpha2 = 1;
+        const indegree: { [key: number]: number } = {};
+
+        // Initialize indegree for all nodes to 0
+        this.nodes.forEach(node => {
+            indegree[node.id] = 0;
+        });
+
+        // Sum up the weights of incoming edges for each node
+        this.links.forEach(link => {
+            if (indegree[link.target.id] !== undefined) {
+                indegree[link.target.id] += link.weight;
+            }
+        });
+
+        // Step 2: Compute the weighted value for each node and sum them up
+        const totalGV = this.nodes.reduce((sum, node) => {
+            const nodeIndegree = indegree[node.id] || 0;
+            const nodeCentrality = node.centrality || 0;
+            // return sum + Math.pow(nodeIndegree, alpha1) * Math.pow(nodeCentrality, alpha2);
+            return sum + Math.pow(nodeIndegree, alpha1);
+            // return sum + Math.pow(nodeCentrality, alpha2);
+        }, 0);
+        this.totalGraphValue.push(totalGV);
     
         this.updateLineGraph(); // Update the line graph with the new weight sums
         this.updateAdjacencyMatrix(); // Update matrix after highlighting edges
@@ -286,33 +334,16 @@ export class ErdosRenyiGraph {
         }
     }
     
-    
-
-    private resetSimulation(): void {
-        this.nodes = [];
-        this.links = [];
-        this.weightSums = [];
-        this.nodeId = 0;
-        this.maxWeight = 0;
-        this.updateCounter = 0;
-        
-        this.initGraph();
-        this.updateGraph();
-        this.updateAdjacencyMatrix();
-        this.updateLineGraph();
-    }
-    
-
     private updateLineGraph(): void {
         const lineGroup = this.svg.select(".line-graph");
     
         // Define the scales
         const xScale = d3.scaleLinear()
-            .domain([0, this.weightSums.length - 1])
+            .domain([0, this.totalGraphValue.length - 1])
             .range([0, plotSize]);
     
         const yScale = d3.scaleLinear()
-            .domain([0, d3.max(this.weightSums)])
+            .domain([0, d3.max(this.totalGraphValue)])
             .range([plotSize, 0]);
     
         // Define the line
@@ -326,7 +357,7 @@ export class ErdosRenyiGraph {
     
         // Add the new path
         lineGroup.append('path')
-            .datum(this.weightSums)
+            .datum(this.totalGraphValue)
             .attr('fill', 'none')
             .attr('stroke', 'blue')
             .attr('stroke-width', 1.5)
@@ -427,24 +458,25 @@ export class ErdosRenyiGraph {
 
     private updateAdjacencyMatrix(): void {
         const cellSize = plotSize / this.nodes.length; // Size of each cell
-    
+        
+        // Get the adjacency matrix
+        const matrix = this.getAdjacencyMatrix();
+        
         // Remove old matrix if present
         this.matrixGroup.selectAll('*').remove();
-    
+        
         // Create matrix cells
         this.matrixGroup.selectAll('rect')
-            .data(this.nodes.flatMap((_, i) => this.nodes.map((_, j) => ({ i, j }))))
+            .data(matrix.flatMap((row, i) => row.map((value, j) => ({ i, j, value }))))
             .enter().append('rect')
             .attr('x', d => d.j * cellSize)
             .attr('y', d => d.i * cellSize)
             .attr('width', cellSize)
             .attr('height', cellSize)
-            .style('fill', d => {
-                const weight = this.getWeight(this.nodes[d.i], this.nodes[d.j]);
-                return d3.interpolateGreens(weight / this.maxWeight);
-            })
+            .style('fill', d => d3.interpolateGreens(d.value / this.maxWeight))
             .style('stroke', '#000'); // Optional: border color for visibility
     }
+    
     
     // Helper function to get weight between two nodes
     private getWeight(nodeA: Node, nodeB: Node): number {
@@ -454,7 +486,28 @@ export class ErdosRenyiGraph {
         );
         return link ? link.weight : 0;
     }
+
+    private getAdjacencyMatrix(): number[][] {
+        const size = this.nodes.length;
+        const matrix: number[][] = Array(size).fill(0).map(() => Array(size).fill(0));
+        
+        this.links.forEach(link => {
+            const sourceIndex = this.nodes.findIndex(node => node.id === link.source.id);
+            const targetIndex = this.nodes.findIndex(node => node.id === link.target.id);
+            matrix[sourceIndex][targetIndex] = link.weight;
+            matrix[targetIndex][sourceIndex] = link.weight;
+        });
+        
+        return matrix;
+    }
+
+    private computeEigenvectorCentrality(): void {
+        const adjacencyMatrix = this.getAdjacencyMatrix();
+        const b = Array(adjacencyMatrix.length).fill(0); // no doping
+        const { eigenvector } = EigenvectorCentralityCalculator.powerIteration(adjacencyMatrix, b, 1000);
     
-    
-    
+        this.nodes.forEach((node, i) => {
+            node.centrality = eigenvector[i];
+        });
+    }    
 }

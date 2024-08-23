@@ -54,8 +54,6 @@
 </d-front-matter>
 
 
-
-
 <d-title>
   <h1>Nosh, a Protocol for Decentralized Commerce</h1>
   <br>
@@ -87,10 +85,7 @@ Hover over a node in the diagram below to see how it accumulates information fro
 
 <p><em>Nosh is a decentralized protocol that enables producers of goods and services to transact with buyers. The protocol is built on a transaction graph that captures the protocol state and enables rewards to be distributed to participants, creating a user-owned network. The protocol has an open and extensible architecture to be compatible with any buyer and producer market. The cryptoeconomic design facilitates robustness to Sybil attacks, and economic fairness, aligns incentives between the network and participants, and unlocks new primitives for verifiability in physical infrastructure networks.</em></p>
 
-<!-- <figure><div id='erdosrenyi'></div>
-  <figcaption>
-  Simulation of the Nosh transaction graph. Each node represents a buyer or seller as indicated by the legend, and each edge represents a transaction between users.  New transactions are represented by highlighted edges, and new buyers and sellers can come onto the network.  The adjacency matrix of the graph is shown on the top right, and the total graph value is shown on the bottom left.
-  </figcaption></figure> -->
+<!-- Some initial visualizations -->
 <figure>
   <div id="ec1" style="float: left; width: 100%;"></div>
   <!-- <div id="ec2" style="float: left; width: 50%;"></div> -->
@@ -113,6 +108,13 @@ Hover over a node in the diagram below to see how it accumulates information fro
   <figcaption>
     The destructiveness of an Island Graph. The blue nodes are nodes participating in real transactions, and the red nodes are nodes that are not participating in transactions. The red nodes are isolated from the rest of the network and transact with themselves.  The size of the nodes indicates the 
     Eigenvector Centrality (EC) of the node.  A larger node has a higher EC and a smaller node has lower EC.  Notice that once real transactions start occuring, the Eigenvector Centrality of the red nodes decreases.
+  </figcaption>
+</figure>
+
+<figure>
+  <div id="erdosrenyi"></div>
+  <figcaption>
+    An integrated simulation of the Nosh network. Here, at each time-step, a random set of edges are highlighted, indicating transactions that occur between those nodes.  Additionally, new nodes are added to the network with some probability. An adjacency matrix representation of the overall network is shown on the top right, and the colors represent the relative weight of the connection between Node i and j in that matrix. On the bottom left is a plot of the sum of the in-degrees of each node of the network, as a function of time. After edges are updated with new transactions and new nodes are added, the plots are updated.
   </figcaption>
 </figure>
 
