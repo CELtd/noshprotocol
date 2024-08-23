@@ -83,9 +83,636 @@ Hover over a node in the diagram below to see how it accumulates information fro
 
 <d-article>
 
-<p><em>Nosh is a decentralized protocol that enables producers of goods and services to transact with buyers. The protocol is built on a transaction graph that captures the protocol state and enables rewards to be distributed to participants, creating a user-owned network. The protocol has an open and extensible architecture to be compatible with any buyer and producer market. The cryptoeconomic design facilitates robustness to Sybil attacks, and economic fairness, aligns incentives between the network and participants, and unlocks new primitives for verifiability in physical infrastructure networks.</em></p>
+<!-- <p><em>Nosh is a decentralized protocol that enables producers of goods and services to transact with buyers. The protocol is built on a transaction graph that captures the protocol state and enables rewards to be distributed to participants, creating a user-owned network. The protocol has an open and extensible architecture to be compatible with any buyer and producer market. The cryptoeconomic design facilitates robustness to Sybil attacks, and economic fairness, aligns incentives between the network and participants, and unlocks new primitives for verifiability in physical infrastructure networks.</em></p> -->
+<p><em>This paper establishes the technical and economic foundations for a trustless peer-to-peer marketplace. <br>
 
-<!-- Some initial visualizations -->
+  A programmable and extensible architecture allows for the creation of specialized marketplaces that cater to specific markets and use cases. The protocol enables the emergence of novel services and composable markets that were previously infeasible due to trust limitations, coordination costs, and verifiability constraints. <br>
+  
+  A self-optimizing transaction graph distributes tokens to participants, creating a user-owned network. An arbitration protocol provides service-guarantees and a resolution mechanism in the case of a dispute without requiring a trusted intermediary.</em></p>
+
+<h2 id="motivation">1. Motivation</h2>
+<p>Software marketplaces perform four critical functions that we aim to decentralize with an economic game:</p>
+<ul>
+  <li>Initialize a network of sellers</li>
+  <li>Initialize a network of buyers</li>
+  <li>Provide an arbitration or dispute resolution mechanism</li>
+  <li>A discovery and communication mechanism</li>
+</ul>
+
+<p>Internet marketplace platforms have created tremendous value in isolated settings, but they lack programmability and interoperability with external systems and increasingly fail to meet the demands of modern markets.</p>
+
+<p>Blockchains have disintermediated trusted third-parties in digital domains through cryptographic mechanisms such as consensus protocols and validity proofs, unlocking the economic benefits of permissionless networks. However, these approaches do not translate to non-digital markets due to trust limitations, coordination costs, and verifiability constraints.</p>
+
+<p>This paper introduces a graph-theoretic framework for a peer-to-peer marketplace that addresses these challenges; providing a path forward for more markets to exist in a permissionless context.</p>
+
+<h2 id="gps">2. General Problem Statement</h2>
+<p>Nosh is a <strong>general decentralized</strong> marketplace. Here we put particular emphasis on these two key words, "general" and "decentralized", because, simple solutions exist already if either word is removed.</p>
+
+<p>By "general", here we mean that we do not need to specify the type of good or service that is being traded in the marketplace. "Decentralized" means that the marketplace is not overseen by one centralized trusted institution.</p>
+
+<p>Decentralized marketplaces have been designed for specific services, particularly digital ones, where objective proofs of the service having been provided are available. For example, one can design a data storage market, where the service providers can prove cryptographically that a specific piece of data has been stored, and therefore can be objectively rewarded by a decentralized protocol (cite Filecoin and others). In a decentralized protocol, there is no authority to vet or trust any set of service providers, therefore metrics of service must be objectively quantifiable.</p>
+
+<p>On the other hand, the problem of a "General Marketplace" can be solved by introducing a centralized trusted overseeing entity. For example, marketplaces for physical services, such as ride shares and food delivery can be built on assumptions of trust on the marketplace administrator. The user trusts that the administrator performs KYC on the service providers, and is responsible for penalizing providers that underperform.</p>
+
+<p>Nosh's general decentralized marketplace provides a solution for this problem, where general services can be traded, which don't necessarily have objectively measurable metrics, without relying on the assumption of a trusted market administrator.</p>
+
+<h2 id="challenges">3. Challenges of a general decentralized marketplace</h2>
+<p>Let's dive deeper into what are the specific challenges that make building a general decentralized marketplace so difficult.</p>
+
+<p>There are a few key elements that needed to be solved to arrive at a general decentralized market place. We list them here:</p>
+<ul>
+    <li>The first challenge to be solved is in providing users a guarantee that if they have made a payment, then the service will be provided. How do service providers show a commitment to completing the service once they have agreed to it? In a centralized marketplace, the administrator ensures the service providers are reliable, and will have to enforce consequences if they are not.</li>
+    <li>How does the network prevent fake transactions? Or if this cannot be solved, a softer version of the problem is how does the network discourage fake transactions? The network must ensure that it is at least not profitable to submit a fake transaction.</li>
+    <li>Since ownership of the network is decentralized, how do we fairly reward all contributors who added value to the network, in a way that does not rely on an assessment of value by a centralized trusted authority, and that cannot be easily cheated to gain rewards greater than actual value added.</li>
+    <li>How can we use rewards to bootstrap the formation of a network of service providers at early stages? If needed, could we give out a greater amount of rewards than the total revenue collected in this bootstraping phase? This has to be done in a way that cannot be abused by dishonest service providers.</li>
+    <li>Since there is no centralized trusted party that can validate whether a service provider is honest or not, can the service provider's reputation and trust be built by performing real transactions that add value to the network?</li>
+</ul>
+
+<h2 id="shallow">4. Shallow dive into economics</h2>
+<p>Before diving into the technical details, in this section we briefly discuss the novel mechanisms Nosh uses to enable a general decentralized marketplace.</p>
+
+<p>The backbone of Nosh's tokenomics is the <strong>transaction graph</strong>. All service providers and buyers are represented as vertices in this graph. Every time a buyer transacts with a service provider, edge weights between these two vertices are added, corresponding to the transaction fees collected.</p>
+
+<p>Having transactions built into a graph means that we can now measure how much value a user contributes to the network, not just by measuring the sum of fees they have bought in, but by measuring the amount of connectivity they contributed to the graph.</p>
+
+<p>The transaction graph then acts as a mechanism to reward real transactions, which contribute real connectivity to the graph. When a real service provider transacts with a real buyer, that buyer also transacts with other real service providers, which transact with other real buyers, and so on.</p>
+
+<p>On the other hand, someone trying to complete fake transactions, would have to set up a set of service providers and buyers to make transactions with each other. While edge weights within this set may grow, this set will not grow real connectivity with the rest of the graph, unless they start transacting with other users, at which point they would be considered real users themselves. We therefore refer to a set of fake users only transacting with each other as an island graph, which do not connect to other larger and better connected islands.</p>
+
+<p>While the graph defines how users will be rewarded for positive contributions to the graph, the Nosh protocol also includes a provider collateral, that may be slashed to penalize dishonest service providers. For each transaction between a service provider and a buyer, an amount of collateral is locked by the provider, which is determined based on the size of the transaction, and the value to the graph of both the service provider and the buyer. This is such that well established service providers, that have already proven their honesty to the network can be required to lock smaller co
+
+</p><h2 id="introdeepdive">5. Introduction to the technical deep dive</h2>
+<p>In the next section we will introduce the technical details of the Nosh transaction graph, and measures of connectivity.</p>
+
+<p>We model commercial networks as a bipartite graph that captures the economic relationships between producers and buyers, with edges signifying the historical transactions between two nodes.</p>
+
+<p>We introduce a modified eigenvector centrality ranking that takes advantage of the graph's attributes to discover optimal token distributions between supply and demand in heterogeneous commercial settings without relying on <em>a priori</em> assumptions about participant behavior, market characteristics, or information from external oracles.</p>
+
+<p>We argue that eigenvector centrality rankings unlock an adaptive approach to aligning the incentives of network participants in a wide range of markets in different states (producer favored markets, buyer favored markets, mature vs. immature markets, markets with high and low connectivity, markets constrained by geography, etc.).</p>
+
+<p>We introduce a solution concept that we define as unprofitable <em>island graphs</em> that shows how eigenvector centrality provides an algorithmic mechanism to protect against self-dealing and collusion risks in the absence of hard cryptographic <em>proofs-of-service</em>.</p>
+
+<p>The same algorithm that aligns the incentives of the network's participants, provides the network with its security guarantee. As each node acts selfishly to improve their individual economic outcomes, they inadvertently contribute to the network’s overall robustness against adversarial threats.</p>
+
+<p>We discuss how the lack of robust <em>proof-of-service</em> mechanisms are a constraint for the mass adoption of permissionless commercial networks.</p>
+
+<p>We present an inhomogeneous eigenvalue formulation for integrating proofs into local sub-graphs, treating verification as a probability density function as opposed to a binary outcome.</p>
+
+<p>The graph allows us to propagate trust assumptions across the network with the strength of the trust assumption decaying with an increasing path length from a trusted source node. This concept of <em>trust propagation</em> provides a path forward for networks that may not have access to definitive or cost-effective service proofs.</p>
+
+<p>Finally, we propose a mechanism for a decentralized insurance market maker that prices the risk of disputed services between untrusted transacting parties. Insurance can be purchased by transacting parties and liquidity providers cover the downside risk of a disputed service. Insurance is purchased with the network token.</p>
+
+<h2 id="graph">6. The NOSH Transaction Graph</h2>
+
+<p>The Dynamic Transaction Graph is a bipartite graph that captures the economic relationships between producers and buyers, with weighted edges representing the cumulative fees from their past transactions. The graph allows the network to dynamically adjust token incentives based on the actual economic activity and pricing power of participants, ensuring a fair and efficient allocation of rewards that adapts to the unique properties of each market, whether location-dependent or location-independent.</p>
+
+<p>A bipartite graph \(G = (U, V, E)\) representing producers \(U\) and buyers \(V\) as nodes, with weighted edges \(E\) capturing transactions between them. Edge weights \(w(u, v)\) track the cumulative fees contributed by producer \(u\) from transactions with buyer \(v\).</p>
+
+<p>We introduce some convenient notation, to denote the sum of the set of edge weights of a given producer,</p>
+<p>\[
+    W_u=\sum_{v \in V} w(u,v),
+\]</p>
+<p>and similarly for a given buyer,</p>
+<p>\[
+    W_v=\sum_{u \in U} w(u,v).
+\]</p>
+
+<p>These metrics, \(W_u\) and \(W_v\), already give us a sense of the total monetary value that a given producer or buyer adds to the network.</p>
+
+<h3 id="ec">6.1 Eigenvector Centrality</h3>
+<p>The advantage of having transactions on a graph is that we can obtain other valuable metrics, rather than just the sum of fees collected. Having a transaction graph allows us to think about the connectivity of providers and users.</p>
+
+<p>In this sense, we can evaluate whether a provider that collected 100 dollars in fees by transacting with one buyer is different from one that collected the same fees by transacting with 100 distinct buyers. The latter provider, for instance, provided a larger amount of connectivity to the network, for the same amount of fees.</p>
+
+<p>A good measure of a provider's (buyer's) connectivity is given by their eigenvector centrality (EC). This can be understood by re-defining the graph as an Adjacency matrix, \(A_{ij}\), where \(A_{uv} = A_{vu} = w(u,v)\), and \(A_{u,u'} = A_{v,v'} = 0\), for \(u,u' \in U\) and \(v,v' \in V\), and the indices \(i,j\) run over all \(U\) and \(V\).</p>
+
+<p>The eigenvector centrality for user \(i\), is defined as the \(i\)-th component of the eigenvector corresponding to the largest eigenvalue of matrix \(A\). The eigenvector, \(x\), is given by solving the equation
+\begin{equation}
+    Ax = \lambda_{\text{max}} x
+\end{equation}
+and we identify the components \(x_u\), \(x_v\) as the EC of a given producer and buyer.</p>
+
+<p>An important aspect of the EC that captures an individual's contribution to connectivity in the graph, is its recursive nature. Producer \(u\)'s EC is proportional to the EC of every buyer they have interacted with. The EC of each of those buyers is proportional to the EC of every producer they have interacted with, and so on.</p>
+
+<p>This means that for a producer (buyer) to gain any amount of EC, they have to interact with <strong>real</strong> buyers (producers) which themselves interact with others.</p>
+
+<p>This means that, unlike the plain edge weight \(W_u\), EC is hard to boost through fake transactions, as it is difficult to boost one's EC without connecting to other well-connected users.</p>
+
+<p>We therefore use EC as a proxy for determining real transactions for general markets, when we can't assume other proofs of real services exist.</p>
+
+<p>The reliance on EC as a measure of realness can be eased for specific markets where we have more proofs available that a real service was completed (for instance, location proofs can be used for a ride-share market).</p>
+
+<p>We will introduce the related concept <strong>Normalized EC</strong>, given by,
+\begin{equation}
+    \bar{x}_u = \frac{x_u}{x_{\text{max}}},
+\end{equation}
+where \(x_{\text{max}}\) is the EC of the highest scoring user in the graph. This normalized version is a number between 0 and 1, where 1 is assigned to the top scoring user.</p>
+
+<h3 id="pex">6.2 Pin exchange and proofs of service</h3>
+<p>While for some specific services, we may be able to prove that the service was completed, we can't assume proofs of performed service are available in general. The most general proxy for a service proof, we have available across different marketplaces is a proof of pin exchange.</p>
+
+<p>A pin exchange provides a proof that the buyer and the provider agree that the service was completed. This means payments and collateral may also be put in escrow until both parties agree service was completed.</p>
+
+<p>Using a pin exchange as sole service proofs means that while the true positives and negatives (case where buyer and provider agree service was completed or not completed) are covered, there exists the possibility of false positives and false negatives.</p>
+
+<p><strong>False positives:</strong> means that a pin was exchanged even though no service was provided. This could be done if the buyer and producer are colluding (or are the same person) and want to increase their contributions to the graph without providing real services. This is partly addressed by using the EC as a measure of "realness" of the participants.</p>
+
+<p><strong>False negatives:</strong> In this case, the buyer may refuse to give the pin, even though the provider has completed the service. This may lead to the provider not getting paid and having their collateral slashed. It can also lead to a dispute between buyer and producer that may require external resolution. We will cover disputes and collateral slashing in Section.</p>
+
+<p>We'll cover in a later section how the Nosh protocol will address false positive and false negative disputes through the service collateral mechanism.</p>
+
+<h3 id="gv">6.3 The concept of graph value</h3>
+<p>Every time a buyer and a producer complete a transaction and a pin is exchanged, the metrics such as their total sum of edge weights, \(W_v\) and \(W_u\), and their eigenvector centralities, \(x_v\) and \(x_u\) are updated.</p>
+
+<p>The <strong>graph value</strong> \(G_u\) for a given producer (or \(G_v\) for a buyer) is a metric that uses the information in the graph to determine the amount of value the user has added to the Nosh network. The main use of such a metric is to allocate rewards to network participants, proportional to the amount of value they have added to the network.</p>
+
+<p>The graph value of a given user, \(G_u\) can be thought of as an update rule with the following basic structure.</p>
+<ol>
+    <li>User \(u\) has a graph value of \(G_u\), and total sum of edge weights, \(W_u\) and EC of \(x_u\).</li>
+    <li>User \(u\) completes a transaction that changes their graph by \(\Delta W_u\) and \(\Delta x_u\).</li>
+    <li>A corresponding graph value update amount \(\Delta G_u(\Delta W_u, \Delta x_u)\), and the graph value is updated as,
+    \begin{equation}
+        G_u = G_u + \Delta G_u(\Delta W_u, \Delta x_u)
+    \end{equation}
+    </li>
+</ol>
+
+<p>We will soon explore in more detail what the graph value update amount looks like, but first consider one last factor, the reputation score, that will also contribute to the graph value.</p>
+
+<h3 id="rep">6.4 Reputation Score</h3>
+<p>Apart from the objective information given in the graph, of the edge weights and the eigenvector centrality (EC), we would like to incorporate a measure of subjective "peer evaluation".</p>
+
+<p>For this reason, we introduce a Reputation score, \(r_u\) for producers and \(r_v\) for buyers. The principle is that a user's reputation score is given by the peer evaluation of themselves by other <strong>real users</strong> who they interact with.</p>
+
+<p><strong>Real</strong> is a key word here. The evaluation a user can give another user after completing a transaction is weighted by how confident we are that the user is a real user, which is in turn based on their graph value.</p>
+
+<p>The outline of the mechanics of the reputation score is as follows:</p>
+<ol>
+    <li>When producer \(u\) and buyer \(v\) begin participating in the Nosh network, they begin with a lowest possible reputation score \(r_{\text{min}}\). Note that it is important that the minimum value is not set to zero, or else as we'll see, this would drive all graph values to zero.</li>
+    <li>Every time each user completes a transaction with another user, they mutually provide a review for each other, within the range \((r_{\text{min}}, r_{\text{max}})\).</li>
+    <li>Suppose producer \(u\) has completed \(N_u\) transactions, and buyer \(v\) has completed \(N_v\) transactions before \(u\) and \(v\) transact with each other. Their current graph values are \(G_u\) and \(G_v\) respectively.</li>
+    <li>Producer \(u\) gives buyer \(v\) a review of \(r_{uv}\), and buyer \(v\) gives the producer a review of \(r_{vu}\).</li>
+    <li>Their reputation scores are updated as follows:
+    <ul>
+        <li>
+            \[
+            r_u = \frac{N_u r_u + G_v r_{uv}}{N_u + 1},
+            \]
+        </li>
+        <li>
+            \[
+            r_v = \frac{N_v r_v + G_u r_{vu}}{N_v + 1}.
+            \]
+        </li>
+    </ul>
+    </li>
+</ol>
+
+<p>The key feature of the reputation update rule is that reviews by other users will only have a high impact if the other users have a large graph value.</p>
+
+<p>Note that the reputation factor will play a role in the definition of the graph value itself, introducing some recursive nature to the definition.</p>
+
+<p>The justification for incorporating the reputation score into the graph value is that this adds a layer of social regulation of dishonest and malicious actors. If there is any other malicious behavior that cannot be captured by connectivity metrics, we rely on the peer evaluation of other well-connected and high-reputation users.</p>
+
+<h3 id="rep">6.5 Mature and Immature Markets</h3>
+<p>In a mature market, there is already an established set of providers, and it is difficult for a new provider to join the market and climb to the highest rank. This means that for a given producer \(u\), it is already difficult to increase their graph value \(G_u\) by increasing their eigenvector centrality ranking.</p>
+
+<p>In such a mature market, it is more valuable to the network to focus more on a provider's total edge weights \(W_u\), than on their connectivity, \(x_u\). These established providers have already proven to be real through their connectivity, and incentivizing them to work even more on their connectivity may centralize power even more, since it is harder for competitors to overtake them in terms of connectivity.</p>
+
+<p>In an immature market, there are no established leaders, and there can be free active competition to try to become the leader. This competition is welcome and beneficial to reach market maturity. It then makes sense in immature markets to incentivize the service providers to increase their connectivity, over increasing their edge weights. At this stage, any producer that dominates could still be overtaken by a competitor, so the risk of excessively concentrating power is not as large as in a mature market.</p>
+
+<p>Connectivity is difficult to manufacture through fake transactions. If one producer sets up a set of fake buyers that they will transact with, this graph of the producer with its fake buyers will still be disconnected from the rest of the graph. The only way to increase connectivity is to generate transactions from real buyers who themselves also complete transactions with other producers, who themselves complete transactions with other buyers...</p>
+
+<p>A key element of our graph value function must then be that it is able to distinguish between mature and immature markets, and incentivize users to work on different metrics. This can be achieved by having a graph value formula proportional to \(W_u^{\bar{x}_u} x_u^{(1-\bar{x}_u)}\). Here we can see for new, not established users, which have \(\bar{x}_u\) close to zero, they are incentivized to focus on improving their graph connectivity. For established users dominating the market with \(\bar{x}_u\) close to 1, these users are incentivized to work on increasing their edge weights, while still not completely neglecting their connectivity, as if they do, another user may overtake them.</p>
+
+<h3 id="gvur">6.6 The graph value update rule</h3>
+<p>Now we have all the elements required to define our graph value update rule.</p>
+
+<p>Here are some design principles that guide how our update rule is chosen:</p>
+<ol>
+    <li>New users can't be trusted to be real users. Users build more trust when their transactions form real connections with other real users. Therefore, we want to encourage new users to focus on improving their EC.</li>
+    <li>The highest performing users, regarding EC, have already proven to be a "real" user, and we can encourage them to bring in higher fees.</li>
+    <li>To summarize the above, when user \(u\) completes a transaction that updates their total edge weights and EC by \(\Delta W_u\) and \(\Delta x_u\), respectively, if \(\bar x_u\) is close to 0, the \(\Delta x_u\) should have a higher impact on their graph value update, and if \(\bar x_u\) is close to 1, then \(\Delta W_u\) should have a higher impact.</li>
+    <li>There should be "economic fairness" between new and established users, as long as they are doing what they are supposed to do. That is, new users that are working on improving their EC, should earn comparable rewards, relative to their contributions to the network, to established users who are focusing on improving their edge weights.</li>
+    <li>Getting positive peer evaluations, and high reputation scores should enable users to obtain higher rewards.</li>
+</ol>
+
+<p>Before introducing the final form of the graph value update rule, let us elaborate more on the subject of economic fairness.</p>
+
+<p>If the progress of new users is measured mainly by \(\Delta x_u\), and that of established users by  \(\Delta W_u\), these are quantities that scale with different magnitudes, and generally we expect  \(\Delta W_u > \Delta x_u\), for the same transaction. Therefore established users would be over-rewarded.</p>
+
+<p>Suppose user \(u\) has a total sum of edge weights, \(W_u\), eigenvector centrality, \(x_u\) and reputation factor \(r_u\). They perform a transaction that changes these quantities by the amounts \(\Delta W_u\), \(\Delta x_u\) and \(\Delta r_u\), respectively. Let's define the <strong>bare graph value change</strong> as,
+\begin{equation}
+    \Delta G_u = (W_u + \Delta W_u)^{\bar x_u} (x_u + \Delta x_u)^{(1 - \bar x_u)} (r_u + \Delta r_u) - W_u^{\bar x_u} x_u^{(1 - \bar x_u)} r_u
+\end{equation}
+</p>
+
+<p>Notice that the exponential weights work to enforce principle number 3. Enforcing this principle, however, means that principle 4 is violated. We therefore need another mechanism to ensure both principles are enforced.</p>
+
+<p>Suppose user \(u_1\) is a new user, with \(\bar x_{u_1}\) close to zero, and \(u_2\) is an established user with \(\bar x_{u_2}\) close to one. User \(u_1\) works on improving their EC, and does a better job at this than its peers, so has an above-average increase in EC. User \(u_2\) also performs above average relative to their peers, by focusing on increasing their edge weights. Both users have performed above average relative to their peers, but user \(u_2\) will get a higher reward under the established formula. Can we fix this?</p>
+
+<p>To do this, we would need to have some notion of what the average performance is for a given level of \(\bar x_u\), then give rewards based on above or below performance at this level.</p>
+
+<p>The first step is to gather information on the average performance so we can compare to it. For a given level of \(\bar x_u\) we need to know for an average user, what bare graph value increase \(\Delta G_u\) did they achieve per transaction of cost \(\Delta W_u\). We define this empirical distribution, as a function of \(\bar x_u\) as,  \(\overline{\frac{\Delta G_u}{\Delta W_u}}(\bar x_u)\).</p>
+
+<p>With this empirical distribution, we can now define, for a given transaction, with \(\Delta G_u\) and \(\Delta W_u\), how much this deviates from the average, for instance by computing a percentage of difference:
+\begin{equation}
+    b_u = 2\frac{\frac{\Delta G_u}{\Delta W_u} - \overline{\frac{\Delta G_u}{\Delta W_u}}(\bar x_u)}{\left\vert \frac{\Delta G_u}{\Delta W_u} \right\vert + \left\vert \overline{\frac{\Delta G_u}{\Delta W_u}}(\bar x_u) \right\vert}.
+\end{equation}
+</p>
+<p>We can then compute a factor \(\alpha_u = \text{Max}(0,1 + b_u)\), which would inform how much better or worse user \(u\) performed than the average, for their level of \(\bar x_u\). We put a lower bound of \(\alpha_u\) at zero, to avoid actually removing graph value from an underperforming user. We can then define a <strong>dressed graph value change</strong> as \(\alpha_u \Delta G_u\).</p>
+
+<p>We are now ready to fully define the graph value update rule, through the following steps:</p>
+<ol>
+    <li>User \(u\) has a graph value of \(G_u\), and total sum of edge weights, \(W_u\), EC of \(x_u\), and reputation score of \(r_u\).</li>
+    <li>User \(u\) completes a transaction that changes their graph by \(\Delta W_u\) and \(\Delta x_u\).</li>
+    <li>User \(u\)'s bare graph value change is computed as
+    \begin{equation}
+    \Delta G_u = (W_u + \Delta W_u)^{\bar x_u}(x_u + \Delta x_u)^{(1 - \bar x_u)}(r_u + \Delta r_u) - W_u^{\bar x_u} x_u^{(1 - \bar x_u)} r_u.
+    \end{equation}
+    </li>
+    <li>Their performance against the average user at their level is measured as,
+    \begin{equation}
+        \alpha_u = \text{Max}\left(0,1+2\frac{\frac{\Delta G_u}{\Delta W_u} - \overline{\frac{\Delta G_u}{\Delta W_u}}(\bar x_u)}{\left\vert\frac{\Delta G_u}{\Delta W_u}\right\vert +
+        \left\vert\overline{\frac{\Delta G_u}{\Delta W_u}}(\bar x_u)\right\vert}\right)
+    \end{equation}
+    </li>
+    <li>The user's bare graph value change is used to update the empirical distribution \(\overline{\frac{\Delta G_u}{\Delta W_u}}(\bar x_u)\).</li>
+    <li>The user's graph value is updated as,
+    \begin{equation}
+        G_u = G_u + \alpha_u \Delta G_u.
+    \end{equation}
+    </li>
+</ol>
+
+<p>Note that for every user that is performing exactly the same as the average, their graph value update would be of the form \(G_u = G_u + \Delta W_u\), which ensures the economic fairness property between new and established users.</p>
+
+<h3 id="gvur">6.7 Incentive alignment and dominant strategies</h3>
+<p>Given our definition of the graph value update rule, we can then analyze what user behavior this incentivizes, and how it aligns with the network's goals.</p>
+
+<p>First, we want to examine under which assumptions it is not rational for a producer to fake a transaction. Suppose a producer, \(u\) has normalized EC of \(\bar x_u\).</p>
+
+<p>The user has an amount \(X\) of funds to spend on a fake transaction. For the average user with the same normalized EC, the amount of graph value they obtain for a transaction of this size is \(\overline{\Delta G_u} = X\), whereas the user will obtain an amount \(\Delta G_u = \alpha_u X\).</p>
+
+<p>The user should not submit the fake transaction if \(\alpha_u < 1\). This is true under the following assumptions:</p>
+<ol>
+    <li>There exists a real and large graph, built from real transactions.</li>
+    <li>The real island is large enough that it is expensive for a malicious user to build an equally large fake island graph.</li>
+    <li>Some of the transactions of other users with the same normalized EC are real, and connect to the real large graph.</li>
+    <li>A transaction that connects to the larger island graph increases the user's EC more than one that connects the user to a smaller island graph.</li>
+    <li>Since some of the users submit real transactions, the average user performs better than a malicious user, therefore \(\alpha_u\) would be less than 1 for a malicious fake transaction.</li>
+</ol>
+
+<p>Under these conditions, then, there is no incentive to submit fake transactions. This would mean that only real transactions are rational to submit, which would in turn build an even stronger real graph, which would further make it even less rational to submit fake transactions.</p>
+
+<p>In these conditions, then rational users are incentivized to act in a way that aligns with the network's goals: to maximize the quantity of <strong>real</strong> transactions.</p>
+
+<p>We can then define formally the main objective function of the network as:
+\begin{equation}
+    L = \sum_{u \in U} G_u + g_v \sum_{v \in V} G_v.
+\end{equation}
+That is, the network's goal is to maximize the sum of graph values of all users, which represents the sum of the value of real transactions. We have included a parameter \(g_v\), which allows us to weigh service provider and buyer contributions differently. Our formulation of graph value results in an incentive alignment: the strategy of selfish rational users, seeking to maximize their own reward, leads to maximizing the network's objectives.</p>
+
+<h2 id="git">7. Graph Interactions with Tokenomics</h2>
+<h3 id="git.tv">7.1 Token Valuation Function</h3>
+<p>So far we have discussed how to measure the value of active users in the Nosh network through the notion of graph value. Any monetary rewards the network wants to give to users could be then made following the distribution of graph value.</p>
+
+<p>Here we address the questions, what if a user no longer wishes to be an active user and would rather sell some of the graph value they have accumulated? What if an active user would rather sell a fraction of their accumulated graph value for immediate liquidity? What if a user wishes to purchase some additional graph value?</p>
+
+<p>These features can be enabled by introducing the Nosh token, and by having a mapping between graph value and a Nosh token. We want this token to have the following features:</p>
+<ol>
+    <li>Graph value can be exchanged for an appropriate amount of Nosh tokens.</li>
+    <li>Nosh tokens are fungible and can be freely exchanged and traded.</li>
+    <li>Nosh token can be used to buy an appropriate amount of graph value.</li>
+</ol>
+
+<p>We therefore introduce the <strong>Token valuation function</strong>, \(M_t\) for producers, and \(N_t\) for buyers, which are functions that inform the exchange rate between graph value and Nosh token.</p>
+
+<h4 id="git.tv">7.1.1 Cashing out and buying in graph value</h4>
+<p>The token valuation function provides a mapping between the amount of graph value a producer has, and how much token they could exchange for this.</p>
+
+<p>The mechanism for cashing out some of this cash value is as follows:</p>
+<ol>
+    <li>At time \(t\), the producer \(u\) has a graph value of \(G_u\), and the token valuation function is \(M_t\).</li>
+    <li>The producer can extract a given amount of token in the range \(m_u \in (0, M_t \cdot G_u)\).</li>
+    <li>Once the producer extracts an amount of tokens \(m_u\), their graph value is updated to,
+    \begin{equation}
+        G_u = G_u - \frac{m_u}{M_t}.
+    \end{equation}
+    </li>
+</ol>
+
+<p>In a similar way, the producer can purchase some amount of tokens, and use them to boost their graph value:</p>
+<ol>
+    <li>At time \(t\), the producer \(u\) has a graph value of \(G_u\), and the token valuation function is \(M_t\).</li>
+    <li>The producer buys in the market an amount of tokens \(m_u\).</li>
+    <li>The producer can use those tokens to boost their graph value, which is updated as 
+    \begin{equation}
+        G_u = G_u + \frac{m_u}{M_t}.
+    \end{equation}
+    </li>
+</ol>
+
+<p>The same cashing out and buying in mechanisms apply to buyers as well, but with the token valuation function \(N_t\).</p>
+
+<p>We have so far established such a valuation function \(M_t\) must exist, and how this allows a user to buy or sell graph value. But what principles should govern the monetary policy for \(M_t\)?</p>
+
+<h3 id="git.if">7.2 Inflationary monetary policy</h3>
+<p>Given we know how graph value translates to the amount of tokens, our choice of \(M_t\) and \(N_t\) control the Nosh token monetary policy. We then need to address questions such as: should these functions increase or decrease over time? at what rate? What should be the ratio between \(M_t\) and \(N_t\)?</p>
+
+<p>Let us define a few more necessary quantities. We can define the ratio between the valuation for buyers vs. producers as \(a_t \equiv N_t / M_t\). If \(a_t\) is large, this means the Nosh network values buyers more than it values producers, and if \(a_t\) is smaller, then it values producers more than buyers. If \(a_t = 0\) this means that only producers are valued by the Nosh network.</p>
+
+<p>One reason for having a non-zero \(a_t\) is that the network may want to incentivize buyer side demand. This is similar to offering coupons to consumers to encourage more transactions.</p>
+
+<p>Next we define the <strong>Total token supply</strong>, \(T_t\) as the amount of tokens that exist in the market at time \(t\).</p>
+
+<p>We then define the <strong>Circulating supply</strong>, \(S_t\), as the total token supply, as well as the token value of all the graph value in the network,
+\begin{equation}
+    S_t = T_t + M_t \left(\sum_{u \in U} G_u + a_t \sum_{v \in V} G_v\right)
+\end{equation}
+</p>
+
+<p>With this definition of the circulating supply, we can state that <strong>the primary mandate of the token valuation function \(M_t\) is to target that a certain amount of the circulating supply be owned by active users, or equivalently target that a certain amount be locked as graph value.</strong></p>
+
+<p>Following this principle, if we want the majority of the supply to be owned by active users, then \(M_t\) should be inflationary, and should increase with time fast enough to ensure this property.</p>
+
+<h4 id="git.target">7.2.1 Targeting a specific Ownership Ratio</h4>
+<p>Let us specify a mechanism through which the inflation rate can be fixed.</p>
+
+<p>This mechanism will be inspired by examining a simple model of network growth, and then applying the results to the observed levels of growth.</p>
+
+<p>Suppose the network is launched at time \(t=0\), we can define the effective network size, \(D_t\), as,
+\begin{equation}
+    D_t = \sum_{u \in U} G_u + a_t \sum_{v \in V} G_v.
+\end{equation}
+Let's assume a model where this network size grows linearly with a rate of \(d\), but also decreases through cashing out of tokens at a rate of \(\epsilon\). This means in our model,
+\begin{equation}
+    D_t = D_0 + (d - \epsilon)t,\,\,\,\,\,T_t = \epsilon \int_0^t M_t^\prime dt^\prime
+\end{equation}
+</p>
+
+<p>Now for instance, we can choose an exponential token valuation function, 
+\begin{equation}
+    M_t = M_0 e^{mt},
+\end{equation}
+such that,
+\begin{equation}
+    \epsilon \int_0^t M_t^\prime dt^\prime = \frac{\epsilon M_0}{m} \left(e^{mt} - 1\right).
+\end{equation}
+</p>
+
+<p>With these inputs, suppose we want to target at late times a specific ratio \(R = \frac{M_t D_t}{S_t}\) (fraction of the circulating supply owned by active users). At late times, we obtain,
+\begin{equation}
+    R = \frac{D_t}{D_t + \frac{\epsilon}{m}},
+\end{equation}
+and we can solve for \(m\) as
+\begin{equation}
+    m = \frac{\epsilon}{\frac{D_t}{R} - D_t}.
+\end{equation}
+Given we have a target ownership ratio, \(R\), this is a simple model to take in real data on network growth and expiration rate, and use this to fix the inflation rate.</p>
+
+<h3 id="git.if">7.3 Distributing Rewards</h3>
+<p>Once we have defined how to distribute Nosh tokens amongst network participants, we can use this distribution as a guide to distributing rewards.</p>
+
+<p><strong>Total network revenue:</strong> We define \(W^t\) as the total amount of revenue the network collected from time \(t-\tau\) to time \(t\). This is given by
+\begin{equation}
+    W^t = \sum_{u \in U, t^\prime \in (t-\tau, t)} W_u
+\end{equation}
+The period \(\tau\) is some network parameter, which controls how often rewards are given out.</p>
+
+<p><strong>Producer rewards:</strong> Suppose there is a producer \(u\) who has a graph value of \(G_u\) and holds \(s_u\) tokens. We define \(z^t_u\) as the rewards the user will receive at time \(t\) for the period between \(t-\tau\) and \(t\). These rewards are given by,
+\begin{equation}
+    z^t_u = W^t \left(\frac{s_u + M_t G_u}{S_t}\right).
+\end{equation}
+</p>
+
+<p><strong>Buyer rewards:</strong> A similar formula applies to buyer rewards,
+\begin{equation}
+    z^t_v = W^t \left(\frac{s_v + a_t M_t G_v}{S_t}\right).
+\end{equation}
+</p>
+
+<h3 id="git.value">7.4 Value of the NOSH Token</h3>
+<p>Holding \(s\) NOSH tokens is intrinsically valuable because this entitles you to a permanent stream of rewards of the form,
+  \begin{equation}
+      z^t = W^t \left(\frac{s}{S_t}\right) = W^t \left(\frac{s}{T_t + M_t \left(\sum_{u \in U} G_u + a_t \sum_{v \in V} G_v\right)}\right)
+  \end{equation}
+  </p>
+  
+  <p>It is important to note that this stream of rewards is set to decay over time for two reasons. First, the network may keep growing over time, leading to the sum of graph value growing larger over time. Second, even if the network stays the same size, the valuation function \(M_t\) is set to increase over time.</p>
+  
+  <p>Therefore, while the stream of rewards is permanent, it also decays over time, such that the sum of rewards given over all time per token may turn out to be finite.</p>
+  
+  <p>Furthermore, for a user to understand how valuable this permanent stream of rewards is to them, they must have an idea of their (annual) discount factor, \(\mu\), which measures the value of money in the present versus the value of having money in one year from now. The value of money decays by a factor of \((1 - \mu)\) for every year in the future for which the money is delayed.</p>
+  
+  <p>For a given user, then the value of holding \(s\) NOSH tokens at time \(t_0\) is given by,
+  \begin{equation}
+      Z_{t_0} = \int_{t_0}^\infty (1 - \mu)^{t/1yr} W^t \left(\frac{s}{T_t + M_t \left(\sum_{u \in U} G_u + a_t \sum_{v \in V} G_v\right)}\right) dt.
+  \end{equation}
+  </p>
+  
+  <p>This principle should dictate a minimum value for which NOSH tokens should be traded for rational token holders.</p>
+  
+
+<h2 id="constraints">8. Constraints on rewards and real usage</h2>
+<p>In this section we will cover the subject of fake transactions, and how our proposed reward mechanism works to minimize their risk.</p>
+
+<p>To simply define the problem, suppose a user completes a transaction, for which they pay a fee to the network of \(w\). If corresponding to this, the network gives the user a reward that is greater than \(w\) then this encourages abuse of the network through fake transactions. So how much reward can Nosh actually give to users while avoiding abuse risk?</p>
+
+
+<h3 id="constraints">8.1 Simple Example G_u = W_u</h3>
+<p>Suppose we had chosen the graph value of the producer to be \(G_u=W_u\) and \(G_v=W_v\). How much rewards can the network give out in this case.</p>
+
+<p>Suppose the producer and the buyer complete a transaction with a fee \(w_{uv}\). If this was a fake transaction, it means \(u\) and \(v\) are colluding (or are the same person), and it cost them \(w_{uv}\) to fake this transaction. The total reward given corresponding to this transaction must be equal to or lower than \(w_{uv}\).</p>
+
+<p>This means the highest reward that can be given to the producer corresponding to this transaction is \(\frac{w_{uv}}{1+a_t}\) and to the buyer, it is \(\frac{w_{uv}a_t}{1+a_t}\).</p>
+
+<p><strong>Recovery time:</strong> While we have now understood how much rewards can be given corresponding to a specific transaction, this is not exactly how the Nosh network works. Completing a transaction gives users an amount of graph value. That graph value entitles the user to a fraction of rewards in perpetuity.</p>
+
+<p>So the relevant question in matters of disincentivizing fake transactions is, how much time does it take the user to recover the cost of their fake transaction?</p>
+
+<p>We define the recovery time \(RT_u\) as the time it takes the user to recover the cost of their fake transactions through rewards. For this given fake transaction of cost \(w_{uv}\), the recovery time would be given by,
+\begin{equation}
+w_{uv} = \int_0^{RT_u} \frac{W_t w_{uv}}{S_t} dt,
+\end{equation}
+or,
+\begin{equation}
+1 = \int_0^{RT_u} \frac{W_t}{S_t} dt,
+\end{equation}
+where we assume the reward period \(\tau\) is short enough that we can represent rewards as a continuous integral.</p>
+
+<p>The goal is then to ensure the recovery time for fake transactions is large, this can be addressed with the following approaches:</p>
+<ol>
+    <li>Increasing cost of fake transactions. In the simple case the cost is given by \(w(u,v)\), this is achieved by requiring fee payments to increase your graph value. If graph connectivity is taken into account, fake transactions do not help connect the user to other real users in the graph, such that fake transactions are more expensive.</li>
+    <li>Alternative proof of real transactions. In some specific cases, some external proofs may be available that show evidence that the transaction is real. This effectively works by increasing the cost of a fake transaction, as one would need to manage to forge such a proof.</li>
+    <li>Controlling inflation rate. A slower \(M_t\) means performing a set of fake transactions doesn't immediately translate into owning the corresponding fraction of the supply, since previous token holders still have to be rewarded. Slower inflation can be a tool against fake transactions.</li>
+    <li>Redistributing less than the total fees collected. If instead of distributing \(W_t\), a smaller fraction \(yW_t\), with \(y<1\) is="" given="" out,="" then="" recovery="" time="" becomes="" longer.="" Note="" that="" we="" are="" also="" free="" to="" choose="" \(y="">1\) but this increases the profitability of fake transactions, but if we address fake transaction through any of the other approaches, this would allow us to over-incentivize as well.</1\)></li>
+</ol>
+
+<h3 id="constraints.ec">8.2 Eigenvector centrality as a measure of realness</h3>
+<p>It would be ideal to have external proofs that transactions are real, that apply to every type of market. This is, however, not always available. So in general, the only evidence we have available for whether a transaction is real or not, is how it increases the user's EC.</p>
+
+<p>How does this actually work, and how does our formulation of graph value increase the cost of fake transactions?</p>
+
+<p>Suppose producer \(u\) and buyer \(v\) are relatively new users, with \(\bar x_u\) and \(\bar x_v\) closer to zero than to one. These users perform a transaction with edge weight \(w_{uv}\). How does the corresponding reward vary between real and fake transactions?</p>
+
+<p>If the transaction is fake, meaning that \(u\) and \(v\) are the same entity and are wash trading, while the cost of the transaction was \(w_{uv}\), the reward for that transaction was an increase in graph value dictated by the update rule described in previous sections. A fake transaction means that the new edge weight will not contribute to connecting the user to other real users in the graph, but will only connect them to themselves.</p>
+
+<p>A fake user could create a "fake island" in the graph, where they create a set of fake producers and buyers that all transact with each other, but the island does not connect to a "main island" of other real users interacting with each other.</p>
+
+<p>In a real transaction between users \(u\) and \(v\), the assumption is that the two are separate entities, and that \(v\) also interacts with other producers, and \(u\) also interacts with other buyers. The real transaction therefore creates a real connection into the "main island" for the users.</p>
+
+<p>Therefore, the mechanism works because of the principle that real transactions connect users to real islands in the graph, and will lead to greater increases in EC per amount of fee \(w_{uv}\), and fake transactions will lead to lower increases in EC for the same fee. This means that real users will have a better performance in terms of bare graph value change per amount of fee. <strong>If the average user is an honest user performing real transactions, then fake transactions will have below-average performance, and therefore the reward obtained will be lower than the fee paid</strong>.</p>
+
+
+<h3 id="constraints.ep">8.3 External proofs and graph value boosts</h3>
+<p>In some particular markets, there may exist external proofs or evidence that users or transactions are real. Here we present two different ways in which external proofs could be incorporated into the current graph value model.</p>
+
+<p><strong>Identity proofs:</strong> We may have external evidence that a given producer or user is a real, identifiable and unique entity. For instance, this can be the case that users verify their identity through submitting government issued IDs.</p>
+
+<p>Suppose we can estimate how much confidence this provides us that this is a unique real user. Our previous measure of unique realness was the EC value for the user. We would then need to have a mapping, where submitting an identity proof is equivalent to a boost of \(b\) in eigenvector centrality for that user.</p>
+
+<p>Interestingly, if one user submits an identity proof, this can have effects that spill over to other users that interact with the first user. If a second user interacts with a user that has provided an identity proof, this increases the confidence that the second user is real as well.</p>
+
+<p>This can be captured by modifying the EC formula to become an inhomogeneous eigenvalue problem. Suppose user \(u\) submits an identity proof that translates into a boost of \(b\) in eigenvector centrality. We then define a "doping vector" \(\vec{b}_u = (0,0,\dots,0,b,0,\dots,0)\), where the nonzero element \(b\) appears in the \(u\)-th position. The inhomogeneous eigenvalue problem to solve is then
+\begin{equation}
+    x = \frac{1}{\lambda_{\rm max}} Ax + \vec{b}
+\end{equation}
+The doping vector doesn't only affect \(u\), but it affects neighboring users that interact with them.</p>
+
+<p><strong>Transaction proofs:</strong> A different type of proofs may boost confidence that a certain transaction was a real transaction. This could be accounted for by introducing a corresponding boost in the graph, such that the corresponding edge weight is larger, as far as the EC calculation is concerned.</p>
+
+<p>Suppose producer \(u\) and buyer \(v\) complete a transaction of edge weight \(w_{uv}\), and they submit a transaction proof. This proof can be accounted by giving the adjacency matrix for EC calculations a boost of the form,
+\begin{equation}
+    \Delta A_{uv} = w_{uv} + b.
+\end{equation}
+The EC can then be computed by solving the eigenvalue problem.</p>
+
+<h2 id="service">9. Service guarantees</h2>
+<h3 id="service.pex">9.1 Pin Exchange as proof of agreement of service</h3>
+<p>We have covered how the graph value update rule, and EC allows us to address fake transactions. Fake transactions can be understood as "false positives", where a signal is given from the producer and the buyer that a real transaction has been completed, but a real transaction did not happen.</p>
+
+<p>In this section, we will address the issue of "false negatives". A false negative corresponds to when a signal is given that a transaction was not completed, when in reality the transaction was actually completed.</p>
+
+<p>Our objective measure for whether a transaction has been completed is the proof of PIN exchange, which proves that the provider and the buyer agree the transaction has been completed. A <strong>dispute</strong> arises when the buyer refuses to exchange the PIN, claiming the service was not provided, but the provider disagrees and claims the service was provided.</p>
+
+<h3 id="service.collateral">9.2 Provider collateral as a service guarantee</h3>
+<p>When a buyer requests a service from a producer, what guarantees do they have that the service will actually be provided?</p>
+
+<p>In a centralized market, this guarantee can be based on the trust that the buyer places on the provider. However, in Nosh's decentralized platform, we want to allow small providers to be able to participate, and still be able to provide a guarantee to buyers that their service will be provided.</p>
+
+<p>For this reason, every transaction between provider \(u\) and buyer \(v\) will require a <strong>provider collateral</strong>, \(l_{uv}\), to be locked in a contract which has the following flow:</p>
+<ol>
+    <li>Buyer \(v\) requests a service from provider \(u\), for which a payment \(p_{uv}\) will be made, and a fee of \(w_{uv}\) will be paid to the network.</li>
+    <li>The provider locks a collateral \(l_{uv}\) which will be locked in the contract, along with the payment \(p_{uv}\) until the transaction is completed.</li>
+    <li>If the PIN is exchanged, signalling that buyer and producer agree the service was provided, then both \(l_{uv}\) and \(p_{uv}\) are sent to the provider.</li>
+    <li>If the buyer refuses to provide their PIN, signalling that their statement that the service was not provided, then \(p_{uv}\) is returned to the buyer, and \(l_{uv}\) is burnt.</li>
+</ol>
+
+<p>This mechanism ensures that there is both a positive incentive on the provider to complete the transaction, and a negative incentive if they fail to do so.</p>
+
+<p>Note that this contract is by design biased towards the buyer, in that while it has the potential of having a negative cost to the provider, there is no immediate economic penalty on the buyer if a dispute arises, where the buyer claims service was not provided, but the provider disagrees. While it is therefore not profitable for a rational buyer to create false negatives, since there is nothing to gain, it is still low cost for a malicious buyer to do so.</p>
+
+<p>While there is no immediate economic consequence on a malicious buyer, given a dispute, they would still presumably lose reputation, as the provider would give them a poor review. We haven't yet specified how to fix the collateral amount, \(l_{uv}\), but both the buyer and provider reputations must be incorporated, in a way that a malicious buyer who repeatedly claims false negatives, will lose their power to demand high collaterals.</p>
+
+<h3 id="service.colform">9.3 Provider collateral formula</h3>
+<p>The provider collateral is a function \(l_{uv}(p_{uv}, G_u, r_u, G_v, r_v)\), which depends on the size of the transaction fee, as well as the contributions to the network (graph value), and separately the reputation scores, of both the buyer and provider.</p>
+
+<p>The general principle is that for a well-established and reputable provider, they can already be trusted by buyers, and do not need to provide large collateral. Similarly, well-established and reputable users are able to demand larger collateral from their service providers.</p>
+
+<p>Generally, then the provider collateral formula takes the form,
+\begin{equation}
+    l_{uv} = p_{uv} f\left(\frac{(r_v - r_{\rm min}) G_v}{(r_u - r_{\rm min}) G_u}\right),
+\end{equation}
+where \(f(x)\) is a monotonically increasing function of \(x\).</p>
+
+<p>We can refine this function further, by demanding that \(f(1) = 1\), and we can place lower and upper bounds, \(f(0) = 0\) and \(\lim_{x \to \infty} f(x) = f_{\rm max}\). These properties can be achieved, for instance, with a Sigmoid function.</p>
+
+<p>While a malicious buyer may be able to occasionally produce a false negative and cause harm to a provider, this formula ensures that a malicious buyer cannot repeatedly do so. Once a buyer repeatedly causes disputes, their reputation score will drop, and this will consequently drive their provider collaterals they can demand close to zero. In a similar way, a new buyer who has just joined the network, cannot be trusted and may be malicious, so they cannot demand provider collateral until they gain some reputation.</p>
+
+<h2 id="em">10. Emergent Markets on Nosh</h2>
+<p>Nosh is in essence a decentralized marketplace that connects producers and buyers without a need for trusted third parties. Despite this narrow definition, given the mechanisms we have presented, there exists an opportunity for different kinds of markets and services to emerge on top of the fundamental Nosh economy. Here we present a few examples.</p>
+
+<h3 id="em.auim">10.1 Active user investment markets</h3>
+<p>To be an owner of the Nosh network, and be entitled to any rewards given, one must either hold Nosh token, or have some amount of active graph value.</p>
+
+<p>We have stated, however, that Nosh can implement an inflationary policy, which would bias the ownership towards active producers and buyers.</p>
+
+<p>This means that if one simply holds Nosh token, there is a significant opportunity cost over investing that token in active graph value.</p>
+
+<p>Given that Nosh allows the option to use Nosh token to purchase graph value, a liquidity providing market can emerge that is mutually beneficial to Nosh token holders and active producers.</p>
+
+<p>This market would connect token holders, who would lend their token to active users, who would then incorporate this into their graph value. This would make the tokens no longer subject to inflation, and thus accrue rewards at a higher rate. The rewards can be split between the token provider and the active users. When the token provider wishes to retrieve their liquidity, the active user can extract the corresponding amount from their graph value, which will have now grown according to the growth of the token valuation function.</p>
+
+<h3 id="em.cim">10.2 Collateral insurance market</h3>
+<p>Given the provider collateral structure we have defined, every time a provider accepts to deliver a service, they are taking on some risk that their collateral will be slashed.</p>
+
+<p>It is possible that some providers would rather pay for an insurance provider to take on that risk instead. This means that there is room for a market of insurance providers to emerge.</p>
+
+<p>The task of an insurance provider is to figure out a correct price they would be willing to charge the provider, to accept taking on the risk of being slashed.</p>
+
+<p>Given the insurance provider has a risk model, where they can compute the probability of the collateral being slashed, \(p_{\rm slash}\), they can compute their expected cost per transaction, as,
+\begin{equation}
+    {\rm Cost} = l_{uv} p_{\rm slash}.
+\end{equation}
+To make a profit, the insurance provider must charge a fee that is greater than this cost.</p>
+
+<h3 id="em.ex">10.3 Example insurance market: Insurance automated market maker</h3>
+<p>The key to establishing a profitable insurance service is having an accurate risk model, such that the fees for taking on the risk can be correctly priced.</p>
+
+<p>While different insurance providers can come up with many ways to model this, and a variety of insurance provider models would benefit the Nosh economy, we discuss here a possible service that can be established to connect token holders who wish to provide liquidity to use as insurance, and providers who need to externalize their risk.</p>
+
+<p>We call this model an <strong>insurance automatic market maker (IAMM)</strong>, in analogy to automated market makers for decentralized exchanges, who work with a similar underlying mechanism.</p>
+
+<h4 id="em.ex1">10.3.1 Simple single price model</h4>
+<p>Suppose in the simplest case, there is a set of insurance providers, \(I\). A given insurance provider, \(i \in I\) provides insurance by staking an amount \(q_i\) of tokens into the insurance pool. There is a total \(Q = \sum_{i \in I} q_i\) tokens in the insurance pool.</p>
+
+<p>We split time into discrete periods of duration \(\tau\). Let's label different periods as \(t_0, t_1, t_d, \dots\), where \(t_n = n\tau\). The insurance pricing at \(t_n\) is determined by the insurance demand and supply in the previous period \(t_{n-1}\).</p>
+
+<p>If in the period of time from \(t_{n-1}\) to \(t_n\), a number of providers, \(u \in U\) place a set of transactions, with collaterals \(l_u^{n-1}\), such that the total collateral for that period is \(L^{n-1} \equiv \sum_{u \in U} l_u^{n-1}\).</p>
+
+<p>With this information we can define a mechanism to determine the price of insurance at the next epoch, \(t_n\) to \(t_{n+1}\). If a provider is completing a transaction with collateral \(l_u^n\), they would need to pay a fee \(F_u^n \equiv \hat F^n l_u^n\), where the pricing constant \(\hat F^n\) is given by,
+\begin{equation}
+    \hat F^n = \frac{L^{n-1}}{Q^{n-1}}.
+\end{equation}
+</p>
+
+<p>In this case, the pricing depends on what is the demand for insurance from the provider side (\(L^{n-1}\)) vs what is the supply from the insurance provider side, \(Q^{n-1}\).</p>
+
+<p>The collateral for the transactions will be taken from the pool \(Q_n\). After the transaction period, some of this collateral will be slashed, due to transactions not getting completed.</p>
+
+<p>After completion of the period \(t_n\) to \(t_{n+1}\), some of the pool will have either made a profit or a loss. This depends on whether the amount of fees collected exceeds the amount of capital that was slashed in that same period.</p>
+
+<p>This mechanism leads to self-correcting market dynamics. If at current conditions the insurance pool is having a loss rather than profit, that means insurance is underpriced. This will lead to some insurance providers abandoning the pool, reducing the pool \(Q_n\). This then reduces the supply of insurance, therefore raises the price, this will happen until the price is found where the pool actually makes enough profit to satisfy the insurance providers.</p>
+
+<p>In the same way, if the pool is making very large profits, it will attract more insurance providers to join the pool, this will increase the supply \(Q_n\) which will result in a reduction of fees, until a more appropriate market price is found.</p>
+
+<h4 id="em.ex2">10.3.2 Concentrated liquidity and granular insurance pricing</h4>
+<p>Given our previous considerations that the risk of collateral slashing actually depends on quantities like \(r_vG_v, r_uG_u\), it is likely unfair to charge the same fee, \(\hat F_n\) across all risk profiles. A more sophisticated insurance provider would have different pricing depending on the level of risk.</p>
+
+<p>One simple model is to consider the risk to be proportional to \(r_vr_uG_vG_u\). We should therefore allow our mechanism to offer different pricing for different values of \(r_vr_uG_vG_u\). Our approach is inspired by Uniswap v3, where there are different liquidity pools for different exchange rate values.</p>
+
+<p>The mechanism consists of splitting the interval \(r_vr_uG_vG_u\) into a set of \(N\) discrete ticks labeled by \(j = 1, \dots, J\). Insurance providers can now choose to deposit liquidity into any one of these \(J\) pools across different values of \(r_vr_uG_vG_u\).</p>
+
+<p>Each of these pools now has an amount of liquidity \(Q^n_j\). The same logic as before applies, where the pricing for each pool is given by,
+\begin{equation}
+    F^n_j = \frac{L_{n-1}^j}{Q_{n-1}^j},
+\end{equation}
+where all quantities now have a "j" label, one for each tick. This allows us to provide different pricing for each level of risk.</p>
+
+<p>This mechanism allows for more sophisticated self-correcting dynamics. If a particular risk level is currently under or overpriced, insurance providers will move their capital from one liquidity pool to another, allowing the mechanism to find the correct market price for each risk level.</p>
+
+<h2 id="con">11. Conclusion</h2>
+<p>By modeling commercial networks as a bipartite graph, we create a self-optimizing network that aligns individual incentives with network objectives, resists manipulation, adapts to heterogeneous market conditions, and strengthens network effects.</p>
+
+<p>A modified eigenvector centrality ranking offers a dynamical method for incentive alignment across various markets, without relying on prior assumptions or external oracles. This approach not only optimizes token distribution but also provides a security guarantee against self-dealing and collusion.</p>
+
+<p>Our verification model offers a solution to the fundamental challenge of physical infrastructure networks that have weak or non-existent proof-of-service mechanisms.</p>
+
+<p>Eigenvector-centrality based cryptonetworks offer a unique set of generalizable properties that can be tuned to support a wide range of cryptonetworks. The models outlined in this paper serve as a strong foundation to unlock a new generation of cryptonetworks.</p>
+
+
+<h2 id="viz">Z. Some Visualizations for Consideration</h2>
 <figure>
   <div id="ec1" style="float: left; width: 100%;"></div>
   <!-- <div id="ec2" style="float: left; width: 50%;"></div> -->
@@ -119,27 +746,6 @@ Hover over a node in the diagram below to see how it accumulates information fro
 </figure>
 
 
-<p>Graphs are all around us; real world objects are often defined in terms of their connections to other things. A set of objects, and the connections between them, are naturally expressed as a <em>graph</em>. Researchers have developed neural networks that operate on graph data (called graph neural networks, or GNNs) for over a decade<d-cite key="Scarselli2009-ku"></d-cite>. Recent developments have increased their capabilities and expressive power. We are starting to see practical applications in areas such as antibacterial discovery <d-cite key="Stokes2020-az"></d-cite>, physics simulations  <d-cite key="Sanchez-Gonzalez2020-yo"></d-cite>, fake news detection <d-cite key="Monti2019-tf"></d-cite>, traffic prediction <d-cite key="undated-sy"></d-cite> and recommendation systems <d-cite key="Eksombatchai2017-il"></d-cite>.</p>
-<p>This article explores and explains modern graph neural networks. We divide this work into four parts. First, we look at what kind of data is most naturally phrased as a graph, and some common examples. Second, we explore what makes graphs different from other types of data, and some of the specialized choices we have to make when using graphs. Third, we build a modern GNN, walking through each of the parts of the model, starting with historic modeling innovations in the field. We move gradually from a bare-bones implementation to a state-of-the-art GNN model. Fourth and finally, we provide a GNN playground where you can play around with a real-word task and dataset to build a stronger intuition of how each component of a GNN model contributes to the predictions it makes.</p>
-<p>To start, let’s establish what a graph is. A graph represents the relations (<em>edges</em>) between a collection of entities (<em>nodes</em>). </p>
-<figure><div id="graph-description" style="margin-bottom:0.25cm;"></div>
-<figcaption>
-Three types of attributes we might find in a graph, hover over to highlight each attribute. Other types of graphs and attributes are explored in the <a href="#other-types-of-graphs-multigraphs-hypergraphs-hypernodes">Other types of graphs</a> section.
-</figcaption></figure>
-
-
-<p>To further describe each node, edge or the entire graph, we can store information in each of these pieces of the graph. </p>
-<figure><div id="graph-description-embeddings"></div>
-<figcaption>
-Information in the form of scalars or embeddings can be stored at each graph node (left) or edge (right).
-</figcaption></figure>
-
-<p>We can additionally specialize graphs by associating directionality to edges (<em>directed, undirected</em>). </p>
-<figure><img src="/directed_undirected.e4b1689d.png" '="">
-<figcaption>
-The edges can be directed, where an edge $e$ has a source node, $v_{src}$, and a destination node $v_{dst}$. In this case, information flows from $v_{src}$ to $v_{dst}$. They can also be undirected, where there is no notion of source or destination nodes, and information flows both directions. Note that having a single undirected edge is equivalent to having one directed edge from $v_{src}$ to $v_{dst}$, and another directed edge from $v_{dst}$ to $v_{src}$.
-</figcaption></figure>
-
 <p>Graphs are very flexible data structures, and if this seems abstract now, we will make it concrete with examples in the next section. </p>
 <h2 id="graphs-and-where-to-find-them">Graphs and where to find them</h2>
 <p>You’re probably already familiar with some types of graph data, such as social networks. However, graphs are an extremely powerful and general representation of data, we will show two types of data that you might not think could be modeled as graphs: images and text. Although counterintuitive, one can learn more about the symmetries and structure of images and text by viewing them as graphs,, and build an intuition that will help understand other less grid-like graph data, which we will discuss later.</p>
@@ -162,110 +768,13 @@ Edit the text above to see how the graph representation changes.
 </figcaption>
 </figure>
 
-<p>Of course, in practice, this is not usually how text and images are encoded: these graph representations are redundant since all images and all text will have very regular structures. For instance, images have a banded structure in their adjacency matrix because all nodes (pixels) are connected in a grid. The adjacency matrix for text is just a diagonal line, because each word only connects to the prior word, and to the next one. </p>
-<aside markdown="1">
-This representation (a sequence of character tokens) refers to the way text is often represented in RNNs; other models, such as Transformers, can be considered to view text as a fully connected graph where we learn the relationship between tokens. See more in <a href="#graph-attention-networks">Graph Attention Networks</a>.
-</aside>
-
-<h3 id="graph-valued-data-in-the-wild">Graph-valued data in the wild</h3>
-<p>Graphs are a useful tool to describe data you might already be familiar with. Let’s move on to data which is more heterogeneously structured. In these examples, the number of neighbors to each node is variable (as opposed to the fixed neighborhood size of images and text). This data is hard to phrase in any other way besides a graph.</p>
-<p><strong>Molecules as graphs.</strong> Molecules are the building blocks of matter, and are built of atoms and electrons in 3D space. All particles are interacting, but when a pair of atoms are stuck in a stable distance from each other, we say they share a covalent bond. Different pairs of atoms and bonds have different distances (e.g. single-bonds, double-bonds). It’s a very convenient and common abstraction to describe this 3D object as a graph, where nodes are atoms and edges are covalent bonds. <d-cite key="Duvenaud2015-yc"></d-cite> Here are two common molecules, and their associated graphs.</p>
-<figure class="fullscreen"><div id="mols-as-graph-citronellal"></div>
-<figcaption>
-(Left) 3d representation of the Citronellal molecule (Center) Adjacency matrix of the bonds in the molecule (Right) Graph representation of the molecule.
-</figcaption>
-</figure>
-
-<figure class="fullscreen"><div id="mols-as-graph-caffeine"></div>
-<figcaption>
-(Left) 3d representation of the Caffeine molecule (Center) Adjacency matrix of the bonds in the molecule (Right) Graph representation of the molecule.
-</figcaption>
-</figure>
-
-
-<p><strong>Social networks as graphs.</strong> Social networks are tools to study patterns in collective behaviour of people, institutions and organizations. We can build a graph representing groups of people by modelling individuals as nodes, and their relationships as edges. </p>
-<figure class="fullscreen"><div id="mols-as-graph-othello"></div>
-<figcaption>
-(Left) Image of a scene from the play "Othello". (Center) Adjacency matrix of the interaction between characters in the play. (Right) Graph representation of these interactions.
-</figcaption>
-</figure>
-
-<p>Unlike image and text data, social networks do not have identical adjacency matrices. </p>
-<figure class="fullscreen"><div id="mols-as-graph-karate"></div>
-<figcaption>
-(Left) Image of karate tournament. (Center) Adjacency matrix of the interaction between people in a karate club. (Right) Graph representation of these interactions.
-</figcaption>
-</figure>
-
-<p><strong>Citation networks as graphs.</strong> Scientists routinely cite other scientists’ work when publishing papers. We can visualize these networks of citations as a graph, where each paper is a node, and each <em>directed</em> edge is a citation between one paper and another. Additionally, we can add information about each paper into each node, such as a word embedding of the abstract. (see <d-cite key="Mikolov2013-vr"></d-cite>,  <d-cite key="Devlin2018-mi"></d-cite> ,  <d-cite key="Pennington2014-kg"></d-cite>). </p>
-<p><strong>Other examples.</strong> In computer vision, we sometimes want to tag objects in visual scenes. We can then build graphs by treating these objects as nodes, and their relationships as edges. <a href="https://www.tensorflow.org/tensorboard/graphs">Machine learning models</a>, <a href="https://openreview.net/pdf?id=BJOFETxR-">programming code</a> <d-cite key="Allamanis2017-kz"></d-cite> and <a href="https://openreview.net/forum?id=S1eZYeHFDS">math equations</a><d-cite key="Lample2019-jg"></d-cite> can also be phrased as graphs, where the variables are nodes, and edges are operations that have these variables as input and output. You might see the term “dataflow graph” used in some of these contexts.</p>
-<p>The structure of real-world graphs can vary greatly between different types of data — some graphs have many nodes with few connections between them, or vice versa. Graph datasets can vary widely (both within a given dataset, and between datasets) in terms of the number of nodes, edges, and the connectivity of nodes.</p>
 <figure>
 <div id="table"></div>
 <figcaption>
-
 <p>Summary statistics on graphs found in the real world. Numbers are dependent on featurization decisions. More useful statistics and graphs can be found in KONECT<d-cite key="Kunegis2013-er"></d-cite></p>
-</figcaption></figure>
-
-<h2 id="what-types-of-problems-have-graph-structured-data">What types of problems have graph structured data?</h2>
-<p>We have described some examples of graphs in the wild, but what tasks do we want to perform on this data? There are three general types of prediction tasks on graphs: graph-level, node-level, and edge-level. </p>
-<p>In a graph-level task, we predict a single property for a whole graph. For a node-level task, we predict some property for each node in a graph. For an edge-level task, we want to predict the property or presence of edges in a graph.</p>
-<p>For the three levels of prediction problems described above (graph-level, node-level, and edge-level), we will show that all of the following problems can be solved with a single model class, the GNN. But first, let’s take a tour through the three classes of graph prediction problems in more detail, and provide concrete examples of each.</p>
-<aside>
-There are other related tasks that are areas of active research. For instance, we might want to <a href="#generative-modelling">generate graphs</a>, or <a href="#graph-explanations-and-attributions">explain predictions on a graph</a>. More topics can be found in the <a href="#into-the-weeds">Into the weeds section </a>.
-</aside>
-
-<h3 id="graph-level-task">Graph-level task</h3>
-<p>In a graph-level task, our goal is to predict the property of an entire graph. For example, for a molecule represented as a graph, we might want to predict what the molecule smells like, or whether it will bind to a receptor implicated in a disease.</p>
-<figure>
-<div id="graph-level-problems"></div>
-</figure>
-
-<p>This is analogous to image classification problems with MNIST and CIFAR, where we want to associate a label to an entire image. With text, a similar problem is sentiment analysis where we want to identify the mood or emotion of an entire sentence at once.</p>
-<h3 id="node-level-task">Node-level task</h3>
-<p>Node-level tasks are concerned with predicting the identity or role of each node within a graph.</p>
-<p>A classic example of a node-level prediction problem is Zach’s karate club.<d-cite key="Zachary1977-jg"></d-cite> The dataset is a single social network graph made up of individuals that have sworn allegiance to one of two karate clubs after a political rift. As the story goes, a feud between Mr. Hi (Instructor) and John H (Administrator) creates a schism in the karate club. The nodes represent individual karate practitioners, and the edges represent interactions between these members outside of karate. The prediction problem is to classify whether a given member becomes loyal to either Mr. Hi or John H, after the feud. In this case, distance between a node to either the Instructor or Administrator is highly correlated to this label.</p>
-<figure>
-<div id="node-level-problems"></div>
-<figcaption>
-On the left we have the initial conditions of the problem, on the right we have a possible solution, where each node has been classified based on the alliance. The dataset can be used in other graph problems like unsupervised learning. 
-</figcaption></figure>
-
-<p>Following the image analogy, node-level prediction problems are analogous to <em>image segmentation</em>, where we are trying to label the role of each pixel in an image. With text, a similar task would be predicting the parts-of-speech of each word in a sentence (e.g. noun, verb, adverb, etc).</p>
-<h3 id="edge-level-task">Edge-level task</h3>
-<p>The remaining prediction problem in graphs is <em>edge prediction</em>. </p>
-<p>One example of edge-level inference is in image scene understanding. Beyond identifying objects in an image, deep learning models can be used to predict the relationship between them. We can phrase this as an edge-level classification: given nodes that represent the objects in the image, we wish to predict which of these nodes share an edge or what the value of that edge is. If we wish to discover connections between entities, we could consider the graph fully connected and based on their predicted value prune edges to arrive at a sparse graph.</p>
-<figure>
-<img src="/merged.0084f617.png" '="">
-<figcaption>
-In (b), above, the original image (a) has been segmented into five entities: each of the fighters, the referee, the audience and the mat. (C) shows the relationships between these entities. 
-</figcaption></figure>
-
-<figure>
-<img src="/edges_level_diagram.c40677db.png" '="">
-<figcaption>
-On the left we have an initial graph built from the previous visual scene. On the right is a possible edge-labeling of this graph when some connections were pruned based on the model’s output.
-</figcaption></figure>
-
-<h2 id="the-challenges-of-using-graphs-in-machine-learning">The challenges of using graphs in machine learning</h2>
-<p>So, how do we go about solving these different graph tasks with neural networks? The first step is to think about how we will represent graphs to be compatible with neural networks.</p>
-<p>Machine learning models typically take rectangular or grid-like arrays as input. So, it’s not immediately intuitive how to represent them in a format that is compatible with deep learning. Graphs have up to four types of information that we will potentially want to use to make predictions: nodes, edges,  global-context and connectivity. The first three are relatively straightforward: for example, with nodes we can form a node feature matrix $N$ by assigning each node an index $i$ and storing the feature for $node_i$ in $N$. While these matrices have a variable number of examples, they can be processed without any special techniques.</p>
-<p>However, representing a graph’s connectivity is more complicated. Perhaps the most obvious choice would be to use an adjacency matrix, since this is easily tensorisable. However, this representation has a few drawbacks. From the <a href="#table">example dataset table</a>, we see the number of nodes in a graph can be on the order of millions, and the number of edges per node can be highly variable. Often, this leads to very sparse adjacency matrices, which are space-inefficient.</p>
-<p>Another problem is that there are many adjacency matrices that can encode the same connectivity, and there is no guarantee that these different matrices would produce the same result in a deep neural network (that is to say, they are not permutation invariant).</p>
-<aside markdown="1">
-Learning permutation invariant operations is an area of recent research.<d-cite key="Mena2018-ce"></d-cite><d-cite key="Murphy2018-fz"></d-cite>
-</aside>
-
-<p>For example, the <a href="mols-as-graph-othello"> Othello graph </a> from before can be described equivalently with these two adjacency matrices.  It can also be described with every other possible permutation of the nodes.</p>
-<figure>
-<div class="two-imgs">
-<img src="/othello1.246371ea.png">
-<img src="/othello2.6897c848.png">
-</div>
-<figcaption>
-Two adjacency matrices representing the same graph.
 </figcaption>
 </figure>
+
 
 <p>The example below shows every adjacency matrix that can describe this small graph of 4 nodes. This is already a significant number of adjacency matrices–for larger examples like Othello, the number is untenable.</p>
 <figure class="fullscreen"><div id="shuffle-sm"></div>
@@ -274,325 +783,6 @@ All of these adjacency matrices represent the same graph. Click on an edge to re
 </figcaption>
 </figure>
 
-<p>One elegant and memory-efficient way of representing sparse matrices is as adjacency lists. These describe the connectivity of edge $e_k$ between nodes $n_i$ and $n_j$ as a tuple (i,j) in the k-th entry of an adjacency list. Since we expect the number of edges to be much lower than the number of entries for an adjacency matrix ($n_{nodes}^2$), we avoid computation and storage on the disconnected parts of the graph. </p>
-<aside>
-Another way of stating this is with Big-O notation, it is preferable to have $O(n_{edges})$, rather than $O(n_{nodes}^2)$.
-</aside>
-
-<p>To make this notion concrete, we can see how information in different graphs might be represented under this specification:</p>
-<figure class="fullscreen">
-<div id="graph-to-tensor"></div>
-<figcaption>
-Hover and click on the edges, nodes, and global graph marker to view and change attribute representations. On one side we have a small graph and on the other the information of the graph in a tensor representation.
-</figcaption></figure>
-
-<p>It should be noted that the figure uses scalar values per node/edge/global, but most practical tensor representations have vectors per graph attribute. Instead of a node tensor of size $[n_{nodes}]$ we will be dealing with node tensors of size $[n_{nodes}, node_{dim}]$. Same for the other graph attributes.</p>
-<h2 id="graph-neural-networks">Graph Neural Networks</h2>
-<p>Now that the  graph’s description is in a matrix format that is permutation invariant, we will describe using graph neural networks (GNNs) to solve graph prediction tasks. <strong>A GNN is an optimizable transformation on all attributes of the graph (nodes, edges, global-context) that preserves graph symmetries (permutation invariances).</strong> We’re going to build GNNs using the “message passing neural network” framework proposed by Gilmer et al.<d-cite key="Gilmer2017-no"></d-cite> using the Graph Nets architecture schematics introduced by Battaglia et al.<d-cite key="Battaglia2018-pi"></d-cite>  GNNs adopt a “graph-in, graph-out” architecture meaning that these model types accept a graph as input, with information loaded into its nodes, edges and global-context, and progressively transform these embeddings, without changing the connectivity of the input graph. </p>
-<h3 id="the-simplest-gnn">The simplest GNN</h3>
-<p>With the numerical representation of graphs that <a href="#graph-to-tensor">we’ve constructed above</a> (with vectors instead of scalars), we are now ready to build a GNN. We will start with the simplest GNN architecture, one where we learn new embeddings for all graph attributes (nodes, edges, global), but where we do not yet use the connectivity of the graph.</p>
-<aside>
-For simplicity, the previous diagrams used scalars to represent graph attributes; in practice feature vectors, or embeddings, are much more useful.   
-</aside>
-
-<p>This GNN uses a separate multilayer perceptron (MLP) (or your favorite differentiable model) on each component of a graph; we call this a GNN layer. For each node vector, we apply the MLP and get back a learned node-vector. We do the same for each edge, learning a per-edge embedding, and also for the global-context vector, learning a single embedding for the entire graph.</p>
-<aside>
-You could also call it a GNN block. Because it contains multiple operations/layers (like a ResNet block).
-</aside>
-
-<figure>
-<img src="/arch_independent.0efb8ae7.png" '="">
-<figcaption>
-A single layer of a simple GNN. A graph is the input, and each component (V,E,U) gets updated by a MLP to produce a new graph. Each function subscript indicates a separate function for a different graph attribute at the n-th layer of a GNN model.
-</figcaption></figure>
-
-<p>As is common with  neural networks modules or layers, we can stack these GNN layers together. </p>
-<p>Because a GNN does not update the connectivity of the input graph, we can describe the output graph of a GNN with the same adjacency list and the same number of feature vectors as the input graph. But, the output graph has updated embeddings, since the GNN has updated each of the node, edge and global-context representations.</p>
-<h3 id="gnn-predictions-by-pooling-information">GNN Predictions by Pooling Information</h3>
-<p>We have built a simple GNN, but how do we make predictions in any of the tasks we described above?</p>
-<p>We will consider the case of binary classification, but this framework can easily be extended to the multi-class or regression case. If the task is to make binary predictions on nodes, and the graph already contains node information, the approach is straightforward — for each node embedding, apply a linear classifier.</p>
-<figure><img src="/prediction_nodes_nodes.c2c8b4d0.png" '=""></figure>
-
-<aside markdown="1">
-We could imagine a social network, where we wish to anonymize user data (nodes) by not using them, and only using relational data (edges). One instance of such a scenario is the node task we specified in the <a href="#node-level-task"> Node-level task</a> subsection. In the Karate club example, this would be just using the number of meetings between people to determine the alliance to Mr. Hi or John H.
-</aside>
-
-<p>However, it is not always so simple. For instance, you might have information in the graph stored in edges, but no information in nodes, but still need to make predictions on nodes. We need a way to collect information from edges and give them to nodes for prediction. We can do this by <em>pooling</em>. Pooling proceeds in two steps:</p>
-<ol>
-<li><p>For each item to be pooled, <em>gather</em> each of their embeddings and concatenate them into a matrix.</p>
-</li>
-<li><p>The gathered embeddings are then <em>aggregated</em>, usually via a sum operation.</p>
-</li>
-</ol>
-<aside markdown="1">
-For a more in-depth discussion on aggregation operations go to the <a href="#comparing-aggregation-operations"> Comparing aggregation operations </a> section.
-</aside>
-
-<p>We represent the <em>pooling</em> operation by the letter $\rho$, and denote that we are gathering information from edges to nodes as $p_{E_n \to V_{n}}$. </p>
-<figure><div id="node-step-small"></div>
-<figcaption>
-Hover over a node (black node) to visualize which edges are gathered and aggregated to produce an embedding for that target node.</figcaption>
-</figure>
-
-
-<p>So If we only have edge-level features, and are trying to predict binary node information, we can use pooling to route (or pass) information to where it needs to go. The model looks like this. </p>
-<figure><img src="/prediction_edges_nodes.e6796b8e.png" style="padding-bottom: 10px;" '="">
-<figcaption>
-</figcaption>
-</figure>
-
-<p>If we only have node-level features, and are trying to predict binary edge-level information, the model looks like this.</p>
-<figure><img src="/prediction_nodes_edges.26fadbcc.png" '=""></figure>
-
-<aside markdown="1">
-One example of such a scenario is the edge task we specified in <a href="#edge-level-task"> Edge level task</a> sub section. Nodes can be recognized as image entities, and we are trying to predict if the entities share a relationship (binary edges).
-</aside>
-
-<p>If we only have node-level features, and need to predict a binary global property, we need to gather all available node information together and aggregate them. This is similar to <em>Global Average Pooling</em> layers in CNNs. The same can be done for edges.</p>
-<figure><img src="/prediction_nodes_edges_global.7a535eb8.png" '=""></figure>
-
-<aside markdown="1">
-This is a common scenario for predicting molecular properties. For example, we have atomic information, connectivity and we would like to know the toxicity of a molecule (toxic/not toxic), or if it has a particular odor (rose/not rose).
-</aside>
-
-<p>In our examples, the classification model <em>$c$</em> can easily be replaced with any differentiable model, or adapted to multi-class classification using a generalized linear model.</p>
-<figure><img src="/Overall.e3af58ab.png" '="">
-<figcaption>
-An end-to-end prediction task with a GNN model.
-</figcaption>
-</figure>
-
-<p>Now we’ve demonstrated that we can build a simple GNN model, and make binary predictions by routing information between different parts of the graph. This pooling technique will serve as a building block for constructing more sophisticated GNN models. If we have new graph attributes, we just have to define how to pass information from one attribute to another. </p>
-<p>Note that in this simplest GNN formulation, we’re not using the connectivity of the graph at all inside the GNN layer. Each node is processed independently, as is each edge, as well as the global context. We only use connectivity when pooling information for prediction. </p>
-<h3 id="passing-messages-between-parts-of-the-graph">Passing messages between parts of the graph</h3>
-<p>We could make more sophisticated predictions by using pooling within the GNN layer, in order to make our learned embeddings aware of graph connectivity. We can do this using <em>message passing</em><d-cite key="Gilmer2017-no"></d-cite>, where neighboring nodes or edges exchange information and influence each other’s updated embeddings.</p>
-<p>Message passing works in three steps: </p>
-<ol>
-<li><p>For each node in the graph, <em>gather</em> all the neighboring node embeddings (or messages), which is the $g$ function described above.</p>
-</li>
-<li><p>Aggregate all messages via an aggregate function (like sum).</p>
-</li>
-<li><p>All pooled messages are passed through an <em>update function</em>, usually a learned neural network.</p>
-</li>
-</ol>
-<aside>
-You could also 1) gather messages, 3) update them and 2) aggregate them and still have a permutation invariant operation.<d-cite key="Zaheer2017-uc"></d-cite> 
-</aside>
-
-<p>Just as pooling can be applied to either nodes or edges, message passing can occur between either nodes or edges.</p>
-<p>These steps are key for leveraging the connectivity of graphs. We will build more elaborate variants of message passing in GNN layers that yield GNN models of increasing expressiveness and power. </p>
-<figure class="fullscreen"><div id="node-step" style="padding-bottom: 10px;"></div>
-<figcaption>
-Hover over a node, to highlight adjacent nodes and visualize the adjacent embedding that would be pooled, updated and stored.
-</figcaption>
-</figure>
-
-<p>This sequence of operations, when applied once, is the simplest type of message-passing GNN layer.</p>
-<p>This is reminiscent of standard convolution: in essence, message passing and convolution are operations to aggregate and process the information of an element’s neighbors in order to update the element’s value. In graphs, the element is a node, and in images, the element is a pixel. However, the number of neighboring nodes in a graph can be variable, unlike in an image where each pixel has a set number of neighboring elements.</p>
-<p>By stacking message passing GNN layers together, a node can eventually incorporate information from across the entire graph: after three layers, a node has information about the nodes three steps away from it.</p>
-<p>We can update our architecture diagram to include this new source of information for nodes:</p>
-<figure><img src="/arch_gcn.40871750.png" '="">
-<figcaption>
-Schematic for a GCN architecture, which updates node representations of a graph by pooling neighboring nodes at a distance of one degree.
-</figcaption></figure>
-
-<h3 id="learning-edge-representations">Learning edge representations</h3>
-<p>Our dataset does not always contain all types of information (node, edge, and global context). 
-When we want to make a prediction on nodes, but our dataset only has edge information, we showed above how to use pooling to route information from edges to nodes, but only at the final prediction step of the model. We can share information between nodes and edges within the GNN layer using message passing.</p>
-<p>We can incorporate the information from neighboring edges in the same way we used neighboring node information earlier, by first pooling the edge information, transforming it with an update function, and storing it.</p>
-<p>However, the node and edge information stored in a graph are not necessarily the same size or shape, so it is not immediately clear how to combine them. One way is to learn a linear mapping from the space of edges to the space of nodes, and vice versa. Alternatively, one may concatenate them together before the update function.</p>
-<figure><img src="/arch_mpnn.a13c2294.png">
-<figcaption>
-Architecture schematic for Message Passing layer. The first step "prepares" a message composed of information from an edge and it's connected nodes and then "passes" the message to the node.
-</figcaption></figure>
-
-<p>Which graph attributes we update and in which order we update them is one design decision when constructing GNNs. We could choose whether to update node embeddings before edge embeddings, or the other way around. This is an open area of research with a variety of solutions– for example we could update in a ‘weave’ fashion<d-cite key="Kearnes2016-rl"></d-cite> where we have four updated representations that get combined into new node and edge representations: node to node (linear), edge to edge (linear), node to edge (edge layer), edge to node (node layer).</p>
-<figure><img src="/arch_weave.352befc0.png">
-<figcaption>
-Some of the different ways we might combine edge and node representation in a GNN layer.
-</figcaption></figure>
-
-<h3 id="adding-global-representations">Adding global representations</h3>
-<p>There is one flaw with the networks we have described so far: nodes that are far away from each other in the graph may never be able to efficiently transfer information to one another, even if we apply message passing several times. For one node, If we have k-layers, information will propagate at most k-steps away.  This can be a problem for situations where the prediction task depends on nodes, or groups of nodes, that are far apart.  One solution would be to have all nodes be able to pass information to each other. 
-Unfortunately for large graphs, this quickly becomes computationally expensive (although this approach, called ‘virtual edges’, has been used for small graphs such as molecules).<d-cite key="Gilmer2017-no"></d-cite></p>
-<p>One solution to this problem is by using the global representation of a graph (U) which is sometimes called a <strong>master node</strong> <d-cite key="Battaglia2018-pi"></d-cite><d-cite key="Gilmer2017-no"></d-cite> or context vector. This global context vector is connected to all other nodes and edges in the network, and can act as a bridge between them to pass information, building up a representation for the graph as a whole. This creates a richer and more complex representation of the graph than could have otherwise been learned. </p>
-<figure><img src="/arch_graphnet.b229be6d.png">
-<figcaption>Schematic of a Graph Nets architecture leveraging global representations.
-</figcaption></figure>
-
-<p>In this view all graph attributes have learned representations, so we can leverage them during pooling by conditioning the information of our attribute of interest with respect to the rest. For example, for one node we can consider information from neighboring nodes, connected edges and the global information. To condition the new node embedding on all these possible sources of information, we can simply concatenate them. Additionally we may also map them to the same space via a linear map and add them or apply a feature-wise modulation layer<d-cite key="Dumoulin2018-tb"></d-cite>, which can be considered a type of featurize-wise attention mechanism.</p>
-<figure><img src="/graph_conditioning.3017e214.png">
-<figcaption>Schematic for conditioning the information of one node based on three other embeddings (adjacent nodes, adjacent edges, global). This step corresponds to the node operations in the Graph Nets Layer. 
-</figcaption></figure>
-
-<h2 id="gnn-playground">GNN playground</h2>
-<p>We’ve described a wide range of GNN components here, but how do they actually differ in practice? This GNN playground allows you to see how these different components and architectures contribute to a GNN’s ability to learn a real task. </p>
-<p>Our playground shows a graph-level prediction task with small molecular graphs. We use the the Leffingwell Odor Dataset<d-cite key="Sanchez-Lengeling2020-qq"></d-cite><d-cite key="Sanchez-Lengeling2019-vs"></d-cite>, which is composed of molecules with associated odor percepts (labels). Predicting the relation of a molecular structure (graph) to its smell is a 100 year-old problem straddling chemistry, physics, neuroscience, and machine learning.</p>
-<p>To simplify the problem,  we consider only a single binary label per molecule, classifying if a molecular graph smells “pungent” or not, as labeled by a professional perfumer. We say a molecule has a “pungent” scent if it has a strong, striking smell. For example, garlic and mustard, which might contain the molecule <em>allyl alcohol</em> have this quality. The molecule <em>piperitone</em>, often used for peppermint-flavored candy, is also described as having a pungent smell.</p>
-<p>We represent each molecule as a graph, where atoms are nodes containing a one-hot encoding for its atomic identity (Carbon, Nitrogen, Oxygen, Fluorine) and bonds are edges containing a one-hot encoding its bond type (single, double, triple or aromatic). </p>
-<p>Our general modeling template for this problem will be built up using sequential GNN layers, followed by a linear model with a sigmoid activation for classification. The design space for our GNN has many levers that can customize the model:</p>
-<ol>
-<li><p>The number of GNN layers, also called the <em>depth</em>.</p>
-</li>
-<li><p>The dimensionality of each attribute when updated. The update function is a 1-layer MLP with a relu activation function and a layer norm for normalization of activations. </p>
-</li>
-<li><p>The aggregation function used in pooling: max, mean or sum.</p>
-</li>
-<li><p>The graph attributes that get updated, or styles of message passing: nodes, edges and global representation. We control these via boolean toggles (on or off). A baseline model would be a graph-independent GNN (all message-passing off) which aggregates all data at the end into a single global attribute. Toggling on all message-passing functions yields a GraphNets architecture.</p>
-</li>
-</ol>
-<p>To better understand how a GNN is learning a task-optimized representation of a graph, we also look at the penultimate layer activations of the GNN. These ‘graph embeddings’ are the outputs of the GNN model right before prediction.  Since we are using a generalized linear model for prediction, a linear mapping is enough to allow us to see how we are learning representations around the decision boundary. </p>
-<p>Since these are high dimensional vectors, we reduce them to 2D via principal component analysis (PCA). 
-A perfect model would visibility separate labeled data, but since we are reducing dimensionality and also have imperfect models, this boundary might be harder to see.</p>
-<p>Play around with different model architectures to build your intuition. For example, see if you can edit the molecule on the left to make the model prediction increase. Do the same edits have the same effects for different model architectures?</p>
-<aside>This playground is running live on the browser in <a href="https://www.tensorflow.org/js/">tfjs</a>.</aside>
-
-<figure class="fullscreen"><div id="playground"></div>
-<figcaption>Edit the molecule to see how the prediction changes, or change the model params to load a different model. Select a different molecule in the scatter plot.</figcaption></figure>
-
-
-<h3 id="some-empirical-gnn-design-lessons">Some empirical GNN design lessons</h3>
-<p>When exploring the architecture choices above, you might have found some models have better performance than others. Are there some clear GNN design choices that will give us better performance? For example, do deeper GNN models perform better than shallower ones? or is there a clear choice between aggregation functions? The answers are going to depend on the data, <d-cite key="Dwivedi2020-xm"></d-cite> <d-cite key="You2020-vk"></d-cite>, and even different ways of featurizing and constructing graphs can give different answers.</p>
-<p>With the following interactive figure, we explore the space of GNN architectures and the performance of this task across a few major design choices:  Style of message passing, the dimensionality of embeddings, number of layers, and aggregation operation type.</p>
-<p>Each point in the scatter plot represents a model: the x axis is the number of trainable variables, and the y axis is the performance. Hover over a point to see the GNN architecture parameters.</p>
-<figure>
-<div id="BasicArchitectures"></div>
-<script>var spec = "BasicArchitectures.json";
-vegaEmbed('#BasicArchitectures', spec).then(function (result) {// Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
-}).catch(console.error);</script>
-<figcaption>Scatterplot of each model's performance vs its number of trainable variables. Hover over a point to see the GNN architecture parameters.</figcaption>
-</figure>
-
-<p>The first thing to notice is that, surprisingly, a higher number of parameters does correlate with higher performance. GNNs are a very parameter-efficient model type: for even a small number of parameters (3k) we can already find models with high performance. </p>
-<p>Next, we can look at the distributions of performance aggregated based on the dimensionality of the learned representations for different graph attributes.</p>
-<figure>
-<div id="ArchitectureNDim"></div>
-<script>var spec = "ArchitectureNDim.json";
-vegaEmbed('#ArchitectureNDim', spec).then(function (result) {// Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
-}).catch(console.error);</script>
-<figcaption>Aggregate performance of models across varying node, edge, and global dimensions.</figcaption>
-</figure>
-
-<p>We can notice that models with higher dimensionality tend to have better mean and lower bound performance but the same trend is not found for the maximum. Some of the top-performing models can be found for smaller dimensions. Since higher dimensionality is going to also involve a higher number of parameters, these observations go in hand with the previous figure.</p>
-<p>Next we can see the breakdown of performance based on the number of GNN layers.</p>
-<figure>
-<div id="ArchitectureNLayers"></div>
-<script>var spec = "ArchitectureNLayers.json";
-vegaEmbed('#ArchitectureNLayers', spec).then(function (result) {// Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
-}).catch(console.error);</script>
-<figcaption> Chart of number of layers vs model performance, and scatterplot of model performance vs number of parameters. Each point is colored by the number of layers. Hover over a point to see the GNN architecture parameters.</figcaption>
-</figure>
-
-
-<p>The box plot shows a similar trend, while the mean performance tends to increase with the number of layers, the best performing models do not have three or four layers, but two. Furthermore, the lower bound for performance decreases with four layers. This effect has been observed before, GNN with a higher number of layers will broadcast information at a higher distance and can risk having their node representations ‘diluted’ from many successive iterations <d-cite key="Corso2020-py"></d-cite>.</p>
-<p>Does our dataset have a preferred aggregation operation? Our following figure breaks down performance in terms of aggregation type.</p>
-<figure>
-<div id="ArchitectureAggregation"></div>
-<script>var spec = "ArchitectureAggregation.json";
-vegaEmbed('#ArchitectureAggregation', spec).then(function (result) {// Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
-}).catch(console.error);</script>
-<figcaption>Chart of aggregation type vs model performance, and scatterplot of model performance vs number of parameters. Each point is colored by aggregation type. Hover over a point to see the GNN architecture parameters.</figcaption>
-</figure>
-
-<p>Overall it appears that sum has a very slight improvement on the mean performance, but max or mean can give equally good models. This is useful to contextualize when looking at the <a href="#comparing-aggregation-operations"> discriminatory/expressive capabilities</a> of aggregation operations .</p>
-<p>The previous explorations have given mixed messages. We can find mean trends where more complexity gives better performance but we can find clear counterexamples where models with fewer parameters, number of layers, or dimensionality perform better. One trend that is much clearer is about the number of attributes that are passing information to each other.</p>
-<p>Here we break down performance based on the style of message passing. On both extremes, we consider models that do not communicate between graph entities (“none”) and models that have messaging passed between nodes, edges, and globals.</p>
-<figure>
-<div id="ArchitectureMessagePassing"></div>
-<script>var spec = "ArchitectureMessagePassing.json";
-vegaEmbed('#ArchitectureMessagePassing', spec).then(function (result) {// Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
-}).catch(console.error);</script>
-<figcaption>Chart of message passing vs model performance, and scatterplot of model performance vs number of parameters. Each point is colored by message passing. Hover over a point to see the GNN architecture parameters</figcaption>
-</figure>
-
-<p>Overall we see that the more graph attributes are communicating, the better the performance of the average model. Our task is centered on global representations, so explicitly learning this attribute also tends to improve performance. Our node representations also seem to be more useful than edge representations, which makes sense since more information is loaded in these attributes.</p>
-<p>There are many directions you could go from here to get better performance. We wish two highlight two general directions, one related to more sophisticated graph algorithms and another towards the graph itself.</p>
-<p>Up until now, our GNN is based on a neighborhood-based pooling operation. There are some graph concepts that are harder to express in this way, for example a linear graph path (a connected chain of nodes). Designing new mechanisms in which graph information can be extracted, executed and propagated in a GNN is one current research area <d-cite key="Markowitz2021-rn"></d-cite>, <d-cite key="Du2019-hr"></d-cite>, <d-cite key="Xu2018-hq"></d-cite>, <d-cite key="Velickovic2019-io"></d-cite>.</p>
-<p>One of the frontiers of GNN research is not making new models and architectures, but “how to construct  graphs”, to be more precise, imbuing graphs with additional structure or relations that can be leveraged. As we loosely saw, the more graph attributes are communicating the more we tend to have better models. In this particular case, we could consider making molecular graphs more feature rich, by adding additional spatial relationships between nodes, adding edges that are not bonds, or explicit learnable relationships between subgraphs.</p>
-<aside>See more in <a href="#Other-types-of-graphs ">Other types of graphs</a>.</aside>
-
-<h2 id="into-the-weeds">Into the Weeds</h2>
-<p>Next, we have a few sections on a myriad of graph-related topics that are relevant for GNNs.</p>
-<h3 id="other-types-of-graphs-multigraphs-hypergraphs-hypernodes-hierarchical-graphs">Other types of graphs (multigraphs, hypergraphs, hypernodes, hierarchical graphs)</h3>
-<p>While we only described graphs with vectorized information for each attribute, graph structures are more flexible and can accommodate other types of information. Fortunately, the message passing framework is flexible enough that often adapting GNNs to more complex graph structures is about defining how information is passed and updated by new graph attributes. </p>
-<p>For example, we can consider multi-edge graphs or <em>multigraphs</em><d-cite key="Harary1969-qo"></d-cite>, where a pair of nodes can share multiple types of edges, this happens when we want to model the interactions between nodes differently based on their type. For example with a social network, we can specify edge types based on the type of relationships (acquaintance, friend, family). A GNN can be adapted by having different types of message passing steps for each edge type. 
-We can also consider nested graphs, where for example a node represents a graph, also called a hypernode graph.<d-cite key="Poulovassilis1994-bt"></d-cite> Nested graphs are useful for representing hierarchical information. For example, we can consider a network of molecules, where a node represents a molecule and an edge is shared between two molecules if we have a way (reaction) of transforming one to the other <d-cite key="Zitnik2018-uk"></d-cite>  <d-cite key="Stocker2020-tr"></d-cite>.
-In this case, we can learn on a nested graph by having a GNN that learns representations at the molecule level and another at the reaction network level, and alternate between them during training.</p>
-<p>Another type of graph is a hypergraph<d-cite key="Berge1976-ss"></d-cite>, where an edge can be connected to multiple nodes instead of just two. For a given graph, we can build a hypergraph by identifying communities of nodes and assigning a hyper-edge that is connected to all nodes in a community.</p>
-<figure><img src="/multigraphs.1bb84306.png">
-<figcaption>Schematic of more complex graphs. On the left we have an example of a multigraph with three edge types, including a directed edge. On the right we have a three-level hierarchical graph, the intermediate level nodes are hypernodes.
-</figcaption></figure>
-
-<p>How to train and design GNNs that have multiple types of graph attributes is a current area of research <d-cite key="Yadati2018-de"></d-cite>, <d-cite key="Zhong2020-mv"></d-cite>.</p>
-<h3 id="sampling-graphs-and-batching-in-gnns">Sampling Graphs and Batching in GNNs</h3>
-<p>A common practice for training neural networks is to update network parameters with gradients calculated on randomized constant size (batch size) subsets of the training data (mini-batches). This practice presents a challenge for graphs due to the variability in the number of nodes and edges adjacent to each other, meaning that we cannot have a constant batch size. The main idea for batching with graphs is to create subgraphs that preserve essential properties of the larger graph. This graph sampling operation is highly dependent on context and involves sub-selecting nodes and edges from a graph. These operations might make sense in some contexts (citation networks) and in others, these might be too strong of an operation (molecules, where a subgraph simply represents a new, smaller molecule). How to sample a graph is an open research question.<d-cite key="Rozemberczki2020-lq"></d-cite> 
-If we care about preserving structure at a neighborhood level, one way would be to randomly sample a uniform number of nodes, our <em>node-set</em>. Then add neighboring nodes of distance k adjacent to the node-set, including their edges.<d-cite key="Leskovec2006-st"></d-cite> Each neighborhood can be considered an individual graph and a GNN can be trained on batches of these subgraphs. The loss can be masked to only consider the node-set since all neighboring nodes would have incomplete neighborhoods.
-A more efficient strategy might be to first randomly sample a single node, expand its neighborhood to distance k, and then pick the other node within the expanded set. These operations can be terminated once a certain amount of nodes, edges, or subgraphs are constructed.
-If the context allows, we can build constant size neighborhoods by picking an initial node-set and then sub-sampling a constant number of nodes (e.g randomly, or via a random walk or Metropolis algorithm<d-cite key="Hubler2008-us"></d-cite>).</p>
-<figure><img src="/sampling.968003b3.png">
-<figcaption>Four different ways of sampling the same graph. Choice of sampling strategy depends highly on context since they will generate different distributions of graph statistics (# nodes, #edges, etc.). For highly connected graphs, edges can be also subsampled. 
-</figcaption></figure>
-
-<p>Sampling a graph is particularly relevant when a graph is large enough that it cannot be fit in memory. Inspiring new architectures and training strategies such as Cluster-GCN <d-cite key="Chiang2019-yh"></d-cite>  and GraphSaint <d-cite key="Zeng2019-eh"></d-cite>. We expect graph datasets to continue growing in size in the future.</p>
-<h3 id="inductive-biases">Inductive biases</h3>
-<p>When building a model to solve a problem on a specific kind of data, we want to specialize our models to leverage the characteristics of that data. When this is done successfully, we often see better predictive performance, lower training time, fewer parameters and better generalization.  </p>
-<p>When labeling on images, for example, we want to take advantage of the fact that a dog is still a dog whether it is in the top-left or bottom-right corner of an image. Thus, most image models use convolutions, which are translation invariant. For text, the order of the tokens is highly important, so recurrent neural networks process data sequentially. Further, the presence of one token (e.g. the word ‘not’) can affect the meaning of the rest of a sentence, and so we need components that can ‘attend’ to other parts of the text, which transformer models like BERT and GPT-3 can do. These are some examples of inductive biases, where we are identifying symmetries or regularities in the data and adding modelling components that take advantage of these properties.</p>
-<p>In the case of graphs, we care about how each graph component (edge, node, global) is related to each other so we seek models that have a relational inductive bias.<d-cite key="Battaglia2018-pi"></d-cite> A model should preserve explicit relationships between entities (adjacency matrix) and preserve graph symmetries (permutation invariance). We expect problems where the interaction between entities is important will benefit from a graph structure. Concretely, this means designing transformation on sets: the order of operation on nodes or edges should not matter and  the operation should work on a variable number of inputs. </p>
-<h3 id="comparing-aggregation-operations">Comparing aggregation operations</h3>
-<p>Pooling information from neighboring nodes and edges is a critical step in any reasonably powerful GNN architecture. Because each node has a variable number of neighbors, and because we want a differentiable method of aggregating this information, we want to use a smooth aggregation operation that is invariant to node ordering and the number of nodes provided.</p>
-<p>Selecting and designing optimal aggregation operations is an open research topic.<d-cite key="Xu2018-sf"></d-cite> A desirable property of an aggregation operation is that similar inputs provide similar aggregated outputs, and vice-versa. Some very simple candidate permutation-invariant operations are sum, mean, and max. Summary statistics like variance also work. All of these take a variable number of inputs, and provide an output that is the same, no matter the input ordering. Let’s explore the difference between these operations.</p>
-<figure><div id="pooling-table"> </div>
-<figcaption>
-No pooling type can always distinguish between graph pairs such as max pooling on the left and sum / mean pooling on the right. 
-</figcaption></figure>
-
-<p>There is no operation that is uniformly the best choice. The mean operation can be useful when nodes have a highly-variable number of neighbors or you need a normalized view of the features of a local neighborhood. The max operation can be useful when you want to highlight single salient features in local neighborhoods. Sum provides a balance between these two, by providing a snapshot of the local distribution of features, but because it is not normalized, can also highlight outliers. In practice, sum is commonly used. </p>
-<p>Designing aggregation operations is an open research problem that intersects with machine learning on sets.<d-cite key="Skianis2019-ds"></d-cite> New approaches such as Principal Neighborhood aggregation<d-cite key="Corso2020-py"></d-cite> take into account several aggregation operations by concatenating them and adding a scaling function that depends on the degree of connectivity of the entity to aggregate. Meanwhile, domain specific aggregation operations can also be designed. One example lies with the “Tetrahedral Chirality” aggregation operators <d-cite key="Pattanaik2020-jj"></d-cite>.</p>
-<h3 id="gcn-as-subgraph-function-approximators">GCN as subgraph function approximators</h3>
-<p>Another way to see GCN (and MPNN) of k-layers with a 1-degree neighbor lookup is as a neural network that operates on learned embeddings of subgraphs of size k.<d-cite key="Liu2018-kf"></d-cite><d-cite key="Xu2018-sf"></d-cite></p>
-<p>When focusing on one node, after k-layers, the updated node representation has a limited viewpoint of all neighbors up to k-distance, essentially a subgraph representation. Same is true for edge representations.</p>
-<p>So a GCN is collecting all possible subgraphs of size k and learning vector representations from the vantage point of one node or edge. The number of possible subgraphs can grow combinatorially, so enumerating these subgraphs from the beginning vs building them dynamically as in a GCN, might be prohibitive.</p>
-<figure><img src="/arch_subgraphs.197f9b0e.png">
-<figcaption>
-</figcaption></figure>
-
-<h3 id="edges-and-the-graph-dual">Edges and the Graph Dual</h3>
-<p>One thing to note is that edge predictions and node predictions, while seemingly different, often reduce to the same problem: an edge prediction task on a graph $G$ can be phrased as a node-level prediction on $G$’s dual.</p>
-<p>To obtain $G$’s dual, we can convert nodes to edges (and edges to nodes). A graph and its dual contain the same information, just expressed in a different way. Sometimes this property makes solving problems easier in one representation than another, like frequencies in Fourier space.  In short, to solve an edge classification problem on $G$, we can think about doing graph convolutions on $G$’s dual (which is the same as learning edge representations on $G$), this idea was developed with Dual-Primal Graph Convolutional Networks.<d-cite key="Monti2018-ov"></d-cite></p>
-<!--[TODO: Image sketch of a graph and its dual]-->
-
-
-<h3 id="graph-convolutions-as-matrix-multiplications-and-matrix-multiplications-as-walks-on-a-graph">Graph convolutions as matrix multiplications, and matrix multiplications as walks on a graph</h3>
-<p>We’ve talked a lot about graph convolutions and message passing, and of course, this raises the question of how do we implement these operations in practice? For this section, we explore some of the properties of matrix multiplication, message passing, and its connection to traversing a graph. </p>
-<p>The first point we want to illustrate is that the matrix multiplication of an adjacent matrix $A$  $n_{nodes} \times n_{nodes}$ with a node feature matrix $X$ of size $n_{nodes} \times node_{dim}$ implements an simple message passing with a summation aggregation.
-Let the matrix be $B=AX$, we can observe that any entry $B_{ij}$ can be expressed as $&lt;A_{row_i} \dot X_{column_j}&gt;= A_{i,1}X_{1,j}+A_{i,2}X_{2, j}+…+A_{i,n}X_{n, j}=\sum_{A_{i,k}&gt;0} X_{k,j}$. Because $A_{i,k}$ are binary entries only when a edge exists between $node_i$ and $node_k$, the inner product is essentially “gathering” all node features values of dimension $j$” that share an edge with $node_i$. It should be noted that this message passing is not updating the representation of the node features, just pooling neighboring node features. But this can be easily adapted by passing $X$ through your favorite differentiable transformation (e.g. MLP) before or after the matrix multiply.</p>
-<p>From this view, we can appreciate the benefit of using adjacency lists. Due to the expected sparsity of $A$ we don’t have to sum all values where $A_{i,j}$ is zero. As long as we have an operation to gather values based on an index, we should be able to just retrieve positive entries. Additionally, this matrix multiply-free approach frees us from using summation as an aggregation operation. </p>
-<p>We can imagine that applying this operation multiple times allows us to propagate information at greater distances. In this sense, matrix multiplication is a form of traversing over a graph. This relationship is also apparent when we look at powers $A^K$ of the adjacency matrix.  If we consider the matrix $A^2$, the term $A^2_{ij}$ counts all walks of length 2 from $node_{i}$ to $node_{j}$ and can be expressed as the inner product $&lt;A_{row_i}, A_{column_j}&gt; = A_{i,1}A_{1, j}+A_{i,2}A_{2, j}+…+A_{i,n}A{n,j}$. The intuition is that the first term $a_{i,1}a_{1, j}$ is only positive under two conditions, there is edge that connects $node_i$ to $node_1$ and another edge that connects $node_{1}$ to $node_{j}$. In other words, both edges form a path of length 2 that goes from $node_i$ to $node_j$ passing by $node_1$. Due to the summation, we are counting over all possible intermediate nodes. This intuition carries over when we consider $A^3=A \matrix A^2$.. and so on to $A^k$. </p>
-<p>There are deeper connections on how we can view matrices as graphs to explore <d-cite key="noauthor_undated-qq"></d-cite><d-cite key="Bapat2014-fk"></d-cite><d-cite key="Bollobas2013-uk"></d-cite>.</p>
-<h3 id="graph-attention-networks">Graph Attention Networks</h3>
-<p>Another way of communicating information between graph attributes is via attention.<d-cite key="Vaswani2017-as"></d-cite> For example, when we consider the sum-aggregation of a node and its 1-degree neighboring nodes we could also consider using a weighted sum.The challenge then is to associate weights in a permutation invariant fashion. One approach is to consider a scalar scoring function that assigns weights based on pairs of nodes ( $f(node_i, node_j)$). In this case, the scoring function can be interpreted as a function that measures how relevant a neighboring node is in relation to the center node. Weights can be normalized, for example with a softmax function to focus most of the weight on a neighbor most relevant for a node in relation to a task. This concept is the basis of Graph Attention Networks (GAT) <d-cite key="Velickovic2017-hf"></d-cite> and Set Transformers<d-cite key="Lee2018-ti"></d-cite>. Permutation invariance is preserved, because scoring works on pairs of nodes. A common scoring function is the inner product and nodes are often transformed before scoring into query and key vectors via a linear map to increase the expressivity of the scoring mechanism. Additionally for interpretability, the scoring weights can be used as a measure of the importance of an edge in relation to a task. </p>
-<figure><img src="/attention.3c55769d.png">
-<figcaption>Schematic of attention over one node with respect to it's adjacent nodes. For each edge an interaction score is computed, normalized and used to weight node embeddings.
-</figcaption></figure>
-
-<p>Additionally, transformers can be viewed as GNNs with an attention mechanism <d-cite key="Joshi2020-ze"></d-cite>. Under this view, the transformer models several elements (i.g. character tokens) as nodes in a fully connected graph and the attention mechanism is assigning edge embeddings to each node-pair which are used to compute attention weights. The difference lies in the assumed pattern of connectivity between entities, a GNN is assuming a sparse pattern and the Transformer is modelling all connections.</p>
-<h3 id="graph-explanations-and-attributions">Graph explanations and attributions</h3>
-<p>When deploying GNN in the wild we might care about model interpretability for building credibility, debugging or scientific discovery. The graph concepts that we care to explain vary from context to context. For example, with molecules we might care about the presence or absence of particular subgraphs<d-cite key="McCloskey2018-ml"></d-cite>, while in a citation network we might care about the degree of connectedness of an article. Due to the variety of graph concepts, there are many ways to build explanations. GNNExplainer<d-cite key="Ying2019-gk"></d-cite> casts this problem as extracting the most relevant subgraph that is important for a task. Attribution techniques<d-cite key="Pope2019-py"></d-cite> assign ranked importance values to parts of a graph that are relevant for a task. Because realistic and challenging graph problems can be  generated synthetically, GNNs can serve as a rigorous and repeatable testbed for evaluating attribution techniques <d-cite key="NEURIPS2020_6054"></d-cite>.</p>
-<figure><img src="/graph_xai.bce4532f.png">
-<figcaption>Schematic of some explanability techniques on graphs. Attributions assign ranked values to graph attributes. Rankings can be used as a basis to extract connected subgraphs that might be relevant to a task.
-</figcaption></figure>
-
-
-<h3 id="generative-modelling">Generative modelling</h3>
-<p>Besides learning predictive models on graphs, we might also care about learning a generative model for graphs. With a generative model we can generate new graphs by sampling from a learned distribution or by completing a graph given a starting point. A relevant application is in the design of new drugs, where novel molecular graphs with specific properties are desired as candidates to treat a disease.</p>
-<p>A key challenge with graph generative models lies in modelling the topology of a graph, which can vary dramatically in size and has $N_{nodes}^2$ terms. One solution lies in modelling the adjacency matrix directly like an image with an autoencoder framework.<d-cite key="Kipf2016-ky"></d-cite> The prediction of the presence or absence of an edge is treated as a binary classification task. The $N_{nodes}^2$ term can be avoided by only predicting known edges and a subset of the edges that are not present. The graphVAE learns to model positive patterns of connectivity and some patterns of non-connectivity in the adjacency matrix.</p>
-<p>Another approach is to build a graph sequentially, by starting with a graph and applying discrete actions such as addition or subtraction of nodes and edges iteratively. To avoid estimating a gradient for discrete actions we can use a policy gradient. This has been done via an auto-regressive model, such a RNN<d-cite key="You2018-vx"></d-cite>, or in a reinforcement learning scenario.<d-cite key="Zhou2019-ko"></d-cite> Furthermore, sometimes graphs can be modeled as just sequences with grammar elements.<d-cite key="Krenn2019-gg"></d-cite><d-cite key="Goyal2020-wl"></d-cite></p>
-<!--[TODO: Image sketch of a graph generation]-->
-
-<h2 id="final-thoughts">Final thoughts</h2>
-<p>Graphs are a powerful and rich structured data type that have strengths and challenges that are very different from those of images and text. In this article, we have outlined some of the milestones that researchers have come up with in building neural network based models that process graphs. We have walked through some of the important design choices that must be made when using these architectures, and hopefully the GNN playground can give an intuition on what the empirical results of these design choices are. The success of GNNs in recent years creates a great opportunity for a wide range of new problems, and we are excited to see what the field will bring. 
-</p></d-article><p></p>
- <d-appendix>
 
 <h3 id="acknowledgments">Acknowledgments</h3>
 <p>We are deeply grateful to Andy Coenen, Brian Lee, Chaitanya K. Joshi, Ed Chi, Humza Iqbal, Fernanda Viegas, Jasper Snoek, Jennifer Wei, Martin Wattenberg, Patricia Robinson, Wesley Qian and Yiliu Wang for their helpful feedback and suggestions, and to Michael Terry for his code reviews. </p>
@@ -608,9 +798,9 @@ Alexander B. Wiltschko provided editing and writing guidance. </p>
 <a href="https://github.com/distillpub/post--gnn-intro/issues/3">Review #3 - Humza Iqbal</a></p>
 <d-citation-list></d-citation-list>
 <d-footnote-list></d-footnote-list><p></p>
-</d-appendix>
 
-</body>
+
+</d-article></body>
 
 <p><d-bibliography src="bibliography.bib"></d-bibliography></p>
 <script src="/noshprotocol.77de5100.js"></script>
